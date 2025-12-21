@@ -9,10 +9,26 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 
+function requireAuth(req, res, next) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+
+  if (!token) return res.status(401).json({ message: "Missing token" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch (e) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+}
+
 // SIGNUP
 router.post("/signup", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { firstName, lastName, phone, email, password } = req.body;
+
 
     if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
     if (password.length < 6) return res.status(400).json({ message: "Password must be at least 6 characters" });
@@ -22,7 +38,14 @@ router.post("/signup", async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const user = await User.create({ email, password: hashed });
+    const user = await User.create({
+  firstName,
+  lastName,
+  phone,
+  email,
+  password: hashed
+});
+
 
     return res.status(201).json({ message: "User created", userId: user._id });
   } catch (err) {
@@ -46,9 +69,52 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: "7d" });
 
-    return res.json({ message: "Login success", token });
+    return res.json({
+    message: "Login success",
+    token,
+    user: {
+    firstName: user.firstName,
+    lastName: user.lastName,
+    phone: user.phone,
+    email: user.email,
+    userId: user._id,
+  },
+});
+
   } catch (err) {
     console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+router.get("/me", requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    return res.json({ user });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+router.put("/me", requireAuth, async (req, res) => {
+  try {
+    const { firstName, lastName, phone, email } = req.body;
+
+    const updated = await User.findByIdAndUpdate(
+      req.userId,
+      { firstName, lastName, phone, email },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    return res.json({ message: "Updated", user: updated });
+  } catch (err) {
+    console.error(err);
+
+    // If email is duplicated, Mongo throws a duplicate key error
+    if (err.code === 11000) {
+      return res.status(409).json({ message: "Email already in use" });
+    }
+
     return res.status(500).json({ message: "Server error" });
   }
 });

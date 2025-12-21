@@ -5,6 +5,7 @@ import LoginPage from "./login";
 import ContactPage from "./ContactPage";
 import AboutPage from "./AboutPage";
 import MainPage from "./MainPage";
+import AccountPage from "./AccountPage";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/main" element={<MainPage />} />
+      <Route path="/account" element={<AccountPage />} />
     </Routes>
   );
 }
