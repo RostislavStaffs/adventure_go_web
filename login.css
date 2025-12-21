@@ -246,6 +246,12 @@
   font-weight: 800;
   cursor: pointer;
 }
+.login-error{
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: crimson;
+}
 
 .login-submit:hover {
   filter: brightness(1.05);

@@ -1,10 +1,43 @@
-import React from "react";
+import React, { useState } from "react";
 import "./login.css";
 import planeImg from "./images/plane.jpg";
 import { Link } from "react-router-dom";
 
 export default function LoginPage() {
+    const [email, setEmail] = useState("");
+const [password, setPassword] = useState("");
+const [error, setError] = useState("");
+const handleLogin = async (e) => {
+    
+  e.preventDefault();
+  setError("");
+
+  try {
+    const res = await fetch("http://localhost:4000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.message || "Login failed");
+      return;
+    }
+
+    // save token
+    localStorage.setItem("token", data.token);
+
+    // go to main page
+    window.location.href = "/main";
+  } catch (err) {
+    setError("Server not reachable");
+  }
+};
+
   return (
+    
     <div className="login-page">
       <div className="login-shell">
         <header className="login-topbar">
@@ -45,8 +78,9 @@ export default function LoginPage() {
                 <br />
                 Sign in into your account.
               </p>
+              {error && <p className="login-error">{error}</p>}
 
-              <form className="login-form">
+              <form className="login-form" onSubmit={handleLogin}>
                 <label className="login-label" htmlFor="email">
                   Email
                 </label>
@@ -69,7 +103,12 @@ export default function LoginPage() {
                       />
                     </svg>
                   </span>
-                  <input id="email" type="email" placeholder="Email" />
+                 <input
+                 type="email"
+                placeholder="Email"
+                value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
                 </div>
 
                 <label className="login-label" htmlFor="password">
@@ -94,7 +133,13 @@ export default function LoginPage() {
                       />
                     </svg>
                   </span>
-                  <input id="password" type="password" placeholder="Password" />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    />
+
                 </div>
 
                 <div className="login-createRow">
@@ -113,9 +158,10 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                <button className="login-submit" type="button">
-                  Sign in
+                <button className="login-submit" type="submit">
+                Sign in
                 </button>
+
               </form>
             </div>
           </section>
