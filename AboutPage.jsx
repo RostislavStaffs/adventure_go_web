@@ -1,10 +1,12 @@
 import React from "react";
 import "./about.css";
 import watermark from "./images/watermark.svg";
-import aboutHero from "./images/family.jpg"; 
+import aboutHero from "./images/family.jpg";
 import { Link } from "react-router-dom";
 
 export default function AboutPage() {
+  const isLoggedIn = Boolean(localStorage.getItem("token")); 
+
   return (
     <div className="about-page">
       <header className="navbar">
@@ -14,18 +16,27 @@ export default function AboutPage() {
           </div>
 
           <nav className="nav-links">
-            <Link to="/">Home</Link>
+            <Link to="/main">Home</Link>
             <Link to="/about">About us</Link>
             <Link to="/contact">Contact</Link>
           </nav>
 
+          
           <div className="nav-actions">
-            <Link to="/login" className="login">
-              Login
-            </Link>
-            <Link to="/signup" className="signup">
-              Sign up
-            </Link>
+            {isLoggedIn ? (
+              <Link to="/account" className="login">
+                Account
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="login">
+                  Login
+                </Link>
+                <Link to="/signup" className="signup">
+                  Sign up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>

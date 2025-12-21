@@ -4,6 +4,9 @@ import planeImg from "./images/plane.jpg";
 import { Link } from "react-router-dom";
 
 export default function ContactPage() {
+  // ✅ CHANGE: detect login from localStorage token (same logic as Main/About)
+  const isLoggedIn = Boolean(localStorage.getItem("token"));
+
   return (
     <div className="contact-page">
       <div className="contact-shell">
@@ -13,10 +16,18 @@ export default function ContactPage() {
               Adventure <span>GO</span>
             </div>
 
-            <Link to="/" className="contact-back">
-              <span className="contact-back-icon">←</span>
+            {/* ✅ CHANGE: if logged in show Account, else show Back (keeps old design layout) */}
+            {isLoggedIn ? (
+              <Link to="/main" className="contact-back">
+                <span className="login-back-icon">←</span>
               Back
-            </Link>
+              </Link>
+            ) : (
+              <Link to="/" className="contact-back">
+                <span className="contact-back-icon">←</span>
+                Back
+              </Link>
+            )}
           </div>
         </header>
 
@@ -76,11 +87,9 @@ export default function ContactPage() {
                   </div>
                 </div>
 
-
                 <label className="contact-label">Email Address</label>
                 <div className="contact-inputWrap">
                   <span className="contact-inputIcon">
-
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                       <path
                         d="M4.5 7.5l7.1 4.7c.25.17.55.25.9.25s.65-.08.9-.25l7.1-4.7"
@@ -101,17 +110,20 @@ export default function ContactPage() {
                   <input placeholder="Email address" />
                 </div>
 
+                {/* ✅ RESTORED: phone number field */}
                 <label className="contact-label">Phone number</label>
                 <div className="contact-inputWrap">
                   <input placeholder="+44" />
                 </div>
 
+                {/* ✅ RESTORED: message + counter */}
                 <label className="contact-label">Message</label>
                 <div className="contact-textareaWrap">
                   <textarea placeholder="Enter your query here..." />
                   <span className="contact-counter">250/250</span>
                 </div>
 
+                {/* ✅ RESTORED: original button label */}
                 <button className="contact-submit" type="button">
                   Submit form
                 </button>
