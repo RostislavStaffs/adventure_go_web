@@ -16,6 +16,39 @@ function decodeJwt(token) {
   }
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result); // data:image/...;base64,...
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// safe local YYYY-MM-DD 
+function toYYYYMMDD(d) {
+  if (!d) return "";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// normalize step.date to YYYY-MM-DD for matching
+function normalizeYYYYMMDD(val) {
+  if (!val) return "";
+  if (typeof val === "string") return val.slice(0, 10);
+  const d = new Date(val);
+  return toYYYYMMDD(d);
+}
+
+function getStepForDate(trip, dateStr) {
+  const target = normalizeYYYYMMDD(dateStr);
+  return (
+    trip?.steps?.find((s) => normalizeYYYYMMDD(s.date) === target) || null
+  );
+}
+
 function formatDateLabel(yyyyMmDd) {
   if (!yyyyMmDd) return "";
   const d = new Date(yyyyMmDd + "T00:00:00");
@@ -55,6 +88,7 @@ function toUiTrip(apiTrip) {
     image: apiTrip.coverImage || "",
     createdAt: apiTrip.createdAt,
     updatedAt: apiTrip.updatedAt,
+    steps: Array.isArray(apiTrip.steps) ? apiTrip.steps : [],
   };
 }
 
@@ -108,7 +142,7 @@ export default function MainPage() {
   ]);
   const [stepError, setStepError] = useState("");
 
-  // Add “Add a spot” modal state 
+  // Add “Add a spot” modal state
   const [showAddSpot, setShowAddSpot] = useState(false);
   const [spotQuery, setSpotQuery] = useState("");
   const [spotResults] = useState([
@@ -178,7 +212,7 @@ export default function MainPage() {
         setShowViewTrip(false);
         setShowDeleteConfirm(false);
         setShowAddStep(false);
-        setShowAddSpot(false); 
+        setShowAddSpot(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -231,7 +265,7 @@ export default function MainPage() {
       return setFormError("Departure date must be after arrival date.");
     if (!tripName.trim()) return setFormError("Please name your trip.");
 
-    //client-side protection from 413
+    // client-side protection from 413
     if (coverFile && coverFile.size > 2 * 1024 * 1024) {
       setFormError("Image too large (max 2MB). Please choose a smaller one.");
       return;
@@ -292,7 +326,9 @@ export default function MainPage() {
 
         const updatedUiTrip = toUiTrip(data);
 
-        setTrips((prev) => prev.map((t) => (t.id === editingTripId ? updatedUiTrip : t)));
+        setTrips((prev) =>
+          prev.map((t) => (t.id === editingTripId ? updatedUiTrip : t))
+        );
 
         if (activeTrip?.id === editingTripId) {
           setActiveTrip(updatedUiTrip);
@@ -349,7 +385,7 @@ export default function MainPage() {
 
   // Open “Add a step” from a day button in View Trip modal
   const openAddStep = (trip, dateObj) => {
-    const iso = dateObj.toISOString().slice(0, 10); // yyyy-mm-dd
+    const iso = toYYYYMMDD(dateObj); // timezone safe
 
     setStepTrip(trip);
     setStepDayISO(iso);
@@ -368,16 +404,63 @@ export default function MainPage() {
     setShowAddStep(true);
   };
 
-  // Submit “Add a step” form
-  const submitStep = (e) => {
+  const submitStep = async (e) => {
     e.preventDefault();
     setStepError("");
 
     if (!stepName.trim()) return setStepError("Please name this step.");
     if (!stepDate) return setStepError("Please choose a date.");
     if (!stepOverview.trim()) return setStepError("Please write an overview of the day.");
+    if (!activeTrip?.id) return setStepError("No active trip selected.");
 
-    setShowAddStep(false);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return setStepError("Not logged in.");
+
+      // photos -> base64
+      const photosBase64 = [];
+      for (const f of stepPhotos || []) {
+        if (f.size > 2 * 1024 * 1024) {
+          setStepError("Image too large (max 2MB). Please choose a smaller one.");
+          return;
+        }
+        photosBase64.push(await fileToBase64(f));
+      }
+
+      const res = await fetch(`${API_BASE}/api/trips/${activeTrip.id}/steps`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
+        body: JSON.stringify({
+          date: stepDate, // YYYY-MM-DD
+          title: stepName.trim(),
+          overview: stepOverview.trim(),
+          photos: photosBase64,
+          spots: stepSpots || [],
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message || "Failed to save step");
+
+      // supports backend returning 
+      const updatedApiTrip = data?.trip ?? data;
+
+      const updatedUiTrip = toUiTrip(updatedApiTrip);
+
+      // update trips list
+      setTrips((prev) => prev.map((t) => (t.id === updatedUiTrip.id ? updatedUiTrip : t)));
+
+      // keep activeTrip in sync (this is what triggers timeline re-render)
+      setActiveTrip(updatedUiTrip);
+
+      setShowAddStep(false);
+    } catch (err) {
+      console.error(err);
+      setStepError(err.message || "Failed to save step");
+    }
   };
 
   // Open “Add a spot” modal from Add Step
@@ -388,7 +471,6 @@ export default function MainPage() {
 
   // Demo select spot for UI preview only
   const selectSpot = (spot) => {
-    // purely for UX demo: adds to list + closes modal
     setStepSpots((prev) => {
       const exists = prev.some((p) => p.name === spot.name);
       if (exists) return prev;
@@ -737,17 +819,44 @@ export default function MainPage() {
 
             <div className="viewTrip-timelineTitle">Timeline</div>
 
+            {/* timeline now shows Step card if exists, else + */}
             <div className="viewTrip-days">
-              {daysBetweenInclusive(activeTrip.arrivalDate, activeTrip.departureDate).map((d) => (
-                <button
-                  key={d.toISOString()}
-                  className="day-chip"
-                  type="button"
-                  onClick={() => openAddStep(activeTrip, d)}
-                >
-                  {d.toLocaleDateString(undefined, { day: "numeric" })}
-                </button>
-              ))}
+              {daysBetweenInclusive(activeTrip.arrivalDate, activeTrip.departureDate).map((d) => {
+                const dayStr = toYYYYMMDD(d);
+                const step = getStepForDate(activeTrip, dayStr);
+
+                return step ? (
+                  <button
+                    key={dayStr}
+                    className="timeline-stepCard"
+                    type="button"
+                    onClick={() => openAddStep(activeTrip, new Date(dayStr + "T00:00:00"))}
+                    title="Step saved (click to edit later)"
+                  >
+                    <div className="timeline-stepThumb">
+                      {step.photos?.[0] ? <img src={step.photos[0]} alt="" /> : null}
+                    </div>
+                    <div className="timeline-stepMeta">
+                      <div className="timeline-stepTitle">{step.title}</div>
+                      <div className="timeline-stepSub">{activeTrip.location}</div>
+                      <div className="timeline-stepCounts">
+                        <span>📍 {step.spots?.length || 0}</span>
+                        <span>🖼 {step.photos?.length || 0}</span>
+                      </div>
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    key={dayStr}
+                    className="timeline-plus"
+                    type="button"
+                    onClick={() => openAddStep(activeTrip, new Date(dayStr + "T00:00:00"))}
+                    aria-label={`Add step for ${dayStr}`}
+                  >
+                    +
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -872,11 +981,7 @@ export default function MainPage() {
                         </div>
                       ))}
 
-                      <button
-                        type="button"
-                        className="step-spotAdd"
-                        onClick={openAddSpot}  //opens "Add a spot" modal
-                      >
+                      <button type="button" className="step-spotAdd" onClick={openAddSpot}>
                         <span className="step-spotAddIcon" aria-hidden="true">
                           📍
                         </span>
@@ -893,7 +998,9 @@ export default function MainPage() {
         </div>
       )}
 
-      
+      {/* =========================
+          ADD A SPOT MODAL
+         ========================= */}
       {showAddSpot && (
         <div
           className="modal-overlay"
@@ -934,7 +1041,7 @@ export default function MainPage() {
                         key={s.id}
                         type="button"
                         className="spot-item"
-                        onClick={() => selectSpot(s)} // demo select
+                        onClick={() => selectSpot(s)}
                       >
                         <span className="spot-thumb" aria-hidden="true" />
                         <span className="spot-name">{s.name}</span>
@@ -965,7 +1072,11 @@ export default function MainPage() {
               <button className="confirm-yes" type="button" onClick={confirmDeleteTrip}>
                 Yes
               </button>
-              <button className="confirm-no" type="button" onClick={() => setShowDeleteConfirm(false)}>
+              <button
+                className="confirm-no"
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
                 No
               </button>
             </div>

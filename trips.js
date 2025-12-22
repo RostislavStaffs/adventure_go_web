@@ -81,5 +81,42 @@ router.delete("/:id", auth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+/*
+ POST /api/trips/:id/steps
+ Create or update a step for a specific day (per-user)
+*/
+// Add Step to a Trip 
+router.post("/:id/steps", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, title, overview, photos = [], spots = [] } = req.body;
+
+    if (!date || !title) {
+      return res.status(400).json({ message: "date and title are required" });
+    }
+
+    const trip = await Trip.findOne({ _id: id, user: req.userId });
+    if (!trip) return res.status(404).json({ message: "Trip not found" });
+
+    // Replace any existing step for that date 
+    trip.steps = (trip.steps || []).filter((s) => s.date !== date);
+
+    trip.steps.push({
+      date,
+      title,
+      overview: overview || "",
+      photos,
+      spots,
+    });
+
+    await trip.save();
+    res.json(trip);
+  } catch (err) {
+    console.error("POST /trips/:id/steps error:", err);
+    res.status(500).json({ message: "Failed to create step" });
+  }
+});
+
+
 
 module.exports = router;
