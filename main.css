@@ -167,3 +167,238 @@
     grid-template-columns: 1fr;
   }
 }
+/* ---- Modal styles ---- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+  padding: 22px;
+}
+
+.modal-card {
+  width: min(1080px, 96vw);
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1.5px solid rgba(0,0,0,0.18);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.25);
+  overflow: hidden;
+}
+
+.modal-topRow {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: 14px 16px;
+}
+
+.modal-back {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.18);
+  background: #fff;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.modal-title {
+  text-align: center;
+  font-weight: 900;
+  font-size: 22px;
+}
+
+.modal-spacer { width: 44px; }
+
+.modal-error {
+  color: crimson;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 6px 0 10px;
+}
+
+/* ---- Add Trip layout ---- */
+
+.modal-addTrip {
+  padding-bottom: 16px;
+}
+
+.addTrip-cover {
+  padding: 0 18px 14px;
+}
+
+.cover-drop {
+  height: 120px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(0,0,0,0.18);
+  background: rgba(0,0,0,0.18);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.cover-icon {
+  color: #fff;
+  opacity: 0.9;
+  margin-bottom: 6px;
+}
+
+.cover-text {
+  color: #fff;
+  font-weight: 800;
+}
+
+.addTrip-form {
+  padding: 0 18px 18px;
+}
+
+.addTrip-row3 {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 14px;
+  background: #fff;
+  border: 1.5px solid rgba(0,0,0,0.18);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+  margin-bottom: 14px;
+}
+
+.addTrip-row2 {
+  background: #fff;
+  border: 1.5px solid rgba(0,0,0,0.18);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+  margin-bottom: 14px;
+}
+
+.addTrip-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.addTrip-inputWrap {
+  border: 1.5px solid rgba(0,0,0,0.55);
+  border-radius: 999px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+}
+
+.addTrip-inputWrap input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+  background: transparent;
+}
+
+.addTrip-icon {
+  opacity: 0.55;
+  font-size: 14px;
+}
+
+.addTrip-textareaWrap textarea {
+  width: 100%;
+  height: 120px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(0,0,0,0.55);
+  padding: 14px;
+  resize: none;
+  outline: none;
+  font-size: 14px;
+}
+
+.addTrip-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.addTrip-create {
+  height: 36px;
+  min-width: 90px;
+  border-radius: 999px;
+  border: none;
+  background: #111;
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* ---- View Trip layout ---- */
+
+.modal-viewTrip {
+  padding-bottom: 16px;
+}
+
+.viewTrip-hero {
+  padding: 0 18px 12px;
+}
+
+.viewTrip-hero img {
+  width: 100%;
+  height: 240px;
+  border-radius: 18px;
+  object-fit: cover;
+  display: block;
+  border: 1.5px solid rgba(0,0,0,0.18);
+}
+
+.viewTrip-meta {
+  padding: 0 18px 8px;
+}
+
+.viewTrip-sub {
+  font-weight: 800;
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+.viewTrip-summary {
+  margin-top: 8px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.viewTrip-timelineTitle {
+  text-align: center;
+  font-weight: 900;
+  margin: 8px 0 10px;
+}
+
+.viewTrip-days {
+  padding: 0 18px 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.day-chip {
+  height: 34px;
+  min-width: 46px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.18);
+  background: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .addTrip-row3 {
+    grid-template-columns: 1fr;
+  }
+  .viewTrip-hero img {
+    height: 200px;
+  }
+}
