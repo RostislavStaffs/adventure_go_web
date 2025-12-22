@@ -171,7 +171,7 @@ export default function MainPage() {
   const [spotErr, setSpotErr] = useState("");
 
   // =========================
-  // Spot Details modal state (NEW)
+  // Spot Details modal state
   // =========================
   const [showSpotDetail, setShowSpotDetail] = useState(false);
   const [spotDraft, setSpotDraft] = useState(null); // currently picked/edited spot object
@@ -299,18 +299,16 @@ export default function MainPage() {
     if (departureDate < arrivalDate) return setFormError("Departure date must be after arrival date.");
     if (!tripName.trim()) return setFormError("Please name your trip.");
 
-    // client-side protection from 413
     if (coverFile && coverFile.size > 2 * 1024 * 1024) {
       setFormError("Image too large (max 2MB). Please choose a smaller one.");
       return;
     }
 
-    // For CREATE, require image. For EDIT, allow keeping old image.
     let finalImage = coverPreview;
 
     try {
       if (coverFile) {
-        finalImage = await fileToDataUrl(coverFile); // persists in MongoDB
+        finalImage = await fileToDataUrl(coverFile);
       }
     } catch {
       return setFormError("Could not read the image. Please try another file.");
@@ -417,20 +415,19 @@ export default function MainPage() {
 
   // Open “Add a step” from a day button (or from View Step Edit)
   const openAddStep = (trip, dateObj, existingStep = null) => {
-    const iso = toYYYYMMDD(dateObj); // timezone safe
+    const iso = toYYYYMMDD(dateObj);
 
     setStepTrip(trip);
     setStepDayISO(iso);
     setStepError("");
 
-    // If editing existing step, prefill
     if (existingStep) {
       setStepName(existingStep.title || "");
       setStepDate(normalizeYYYYMMDD(existingStep.date) || iso);
       setStepOverview(existingStep.overview || "");
       setStepSpots(Array.isArray(existingStep.spots) ? existingStep.spots : []);
       setStepExistingPhotos(Array.isArray(existingStep.photos) ? existingStep.photos : []);
-      setStepPhotos([]); // new uploads start empty
+      setStepPhotos([]);
     } else {
       setStepName("");
       setStepDate(iso);
@@ -438,7 +435,6 @@ export default function MainPage() {
       setStepPhotos([]);
       setStepExistingPhotos([]);
 
-      // demo only (you can remove these defaults later)
       setStepSpots([
         { id: "spot1", name: "Café de l’Acadèmia", note: "", photo: "", photon: null },
         { id: "spot2", name: "Picasso Museum", note: "", photo: "", photon: null },
@@ -454,7 +450,6 @@ export default function MainPage() {
     setViewStep(step);
     setViewPhotoIdx(0);
 
-    // swap modals
     setShowViewTrip(false);
     setShowViewStep(true);
   };
@@ -485,7 +480,6 @@ export default function MainPage() {
       const token = localStorage.getItem("token");
       if (!token) return setStepError("Not logged in.");
 
-      // new photos -> base64
       const photosBase64 = [];
       for (const f of stepPhotos || []) {
         if (f.size > 2 * 1024 * 1024) {
@@ -504,11 +498,11 @@ export default function MainPage() {
           ...authHeaders(),
         },
         body: JSON.stringify({
-          date: stepDate, // YYYY-MM-DD
+          date: stepDate,
           title: stepName.trim(),
           overview: stepOverview.trim(),
           photos: finalPhotos,
-          spots: stepSpots || [], // array of { name, note, photo
+          spots: stepSpots || [],
         }),
       });
 
@@ -563,7 +557,6 @@ export default function MainPage() {
           const p = f.properties || {};
           const coords = f.geometry?.coordinates || [];
           return {
-            // internal UI id (stable for selection)
             id: `ph_${p.osm_type || ""}_${p.osm_id || ""}_${crypto.randomUUID()}`,
             name: p.name || p.street || p.city || "Unknown place",
             photon: {
@@ -594,7 +587,6 @@ export default function MainPage() {
     return () => clearTimeout(t);
   }, [spotQuery, showAddSpot]);
 
-  // click photon result -> open spot detail modal
   const onPickPhotonSpot = (photonSpot) => {
     setSpotDraft(photonSpot);
     setSpotNote("");
@@ -606,7 +598,6 @@ export default function MainPage() {
     setShowSpotDetail(true);
   };
 
-  // click existing step spot -> edit in spot detail modal
   const onEditExistingSpot = (spot) => {
     setSpotDraft(spot);
     setSpotNote(spot?.note || "");
@@ -630,18 +621,16 @@ export default function MainPage() {
 
     const finalSpot = {
       ...spotDraft,
-      // ensure we store our own id that remains stable inside the step
       id: editingSpotId || `spot_${crypto.randomUUID()}`,
       note: (spotNote || "").trim(),
       photo: spotPhotoPreview || spotDraft.photo || "",
     };
 
     setStepSpots((prev) => {
-      // update existing
       if (editingSpotId) {
         return prev.map((s) => (s.id === editingSpotId ? finalSpot : s));
       }
-      // prevent duplicates by same osm_id if present, else by name
+
       const prevHasSame =
         prev.some((p) => p?.photon?.osm_id && finalSpot?.photon?.osm_id && p.photon.osm_id === finalSpot.photon.osm_id) ||
         prev.some((p) => (p?.name || "").toLowerCase() === (finalSpot?.name || "").toLowerCase());
@@ -653,7 +642,6 @@ export default function MainPage() {
     closeSpotDetail();
   };
 
-  // tiny helper for Highlights fallback quote
   const makeHighlightQuote = (spotName) => `“${spotName} was one of the best moments of the day.”`;
 
   return (
@@ -942,7 +930,8 @@ export default function MainPage() {
 
             <div className="viewTrip-meta">
               <div className="viewTrip-sub">
-                {activeTrip.location} • {formatDateLabel(activeTrip.arrivalDate)} – {formatDateLabel(activeTrip.departureDate)}
+                {activeTrip.location} • {formatDateLabel(activeTrip.arrivalDate)} –{" "}
+                {formatDateLabel(activeTrip.departureDate)}
               </div>
               {activeTrip.summary && <div className="viewTrip-summary">{activeTrip.summary}</div>}
             </div>
@@ -1012,7 +1001,6 @@ export default function MainPage() {
 
             <div className="viewStep-body">
               <div className="viewStep-topGrid">
-                {/* Photo */}
                 <div className="viewStep-photoWrap">
                   <div className="viewStep-photoFrame">
                     {viewStep.photos?.length ? (
@@ -1026,7 +1014,9 @@ export default function MainPage() {
                         <button
                           type="button"
                           className="viewStep-arrow viewStep-arrowLeft"
-                          onClick={() => setViewPhotoIdx((p) => (p - 1 + viewStep.photos.length) % viewStep.photos.length)}
+                          onClick={() =>
+                            setViewPhotoIdx((p) => (p - 1 + viewStep.photos.length) % viewStep.photos.length)
+                          }
                           aria-label="Previous photo"
                         >
                           ‹
@@ -1044,7 +1034,6 @@ export default function MainPage() {
                   </div>
                 </div>
 
-                {/* Overview */}
                 <div className="viewStep-overviewCard">
                   <div className="viewStep-overviewHeader">
                     <div className="viewStep-overviewTitle">Overview of the day</div>
@@ -1067,16 +1056,11 @@ export default function MainPage() {
                     </div>
 
                     <div className="viewStep-highlightImg">
-                      {spot?.photo ? (
-                        <img src={spot.photo} alt="" />
-                      ) : (
-                        <div className="viewStep-highlightImgPh" />
-                      )}
+                      {spot?.photo ? <img src={spot.photo} alt="" /> : <div className="viewStep-highlightImgPh" />}
                     </div>
                   </div>
                 ))}
 
-                {/* if fewer than 3 spots, show placeholders */}
                 {Array.from({ length: Math.max(0, 3 - (viewStep.spots?.length || 0)) }).map((_, i) => (
                   <div key={`ph_${i}`} className="viewStep-highlightCard viewStep-highlightCardPh">
                     <div className="viewStep-highlightName">No spot</div>
@@ -1093,7 +1077,7 @@ export default function MainPage() {
       )}
 
       {/* =========================
-          ADD A STEP MODAL
+          ADD A STEP MODAL (UPDATED TO MATCH FIGMA)
          ========================= */}
       {showAddStep && stepTrip && (
         <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={() => setShowAddStep(false)}>
@@ -1116,19 +1100,11 @@ export default function MainPage() {
               <form id="addStepForm" onSubmit={submitStep}>
                 {stepError && <div className="modal-error">{stepError}</div>}
 
-                {/* TOP CARD */}
+                {/* TOP CARD (LEFT = fields, RIGHT = spots) */}
                 <section className="step-card">
                   <div className="step-topGrid">
-                    <div className="step-map">
-                      <div className="step-mapInner">
-                        <div className="step-mapHint">Map coming soon</div>
-                        <div className="step-mapSub">(We’ll connect Geo APIs later — for now this is a placeholder)</div>
-                      </div>
-                    </div>
-
-                    <div className="step-divider" />
-
-                    <div className="step-right">
+                    {/* LEFT */}
+                    <div className="step-left">
                       <div className="step-group">
                         <div className="step-h">Name this step</div>
                         <div className="step-pill">
@@ -1180,12 +1156,40 @@ export default function MainPage() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="step-divider" />
+
+                    {/* RIGHT */}
+                    <div className="step-right step-rightSpots">
+                      <div className="step-h step-hSmall">Spots you have visited</div>
+
+                      <div className="step-spots">
+                        {stepSpots.map((s) => (
+                          <button
+                            key={s.id || s.name}
+                            type="button"
+                            className="step-spotPill"
+                            onClick={() => onEditExistingSpot(s)}
+                          >
+                            <span className="step-spotThumb" aria-hidden="true" />
+                            <span className="step-spotName">{s.name}</span>
+                          </button>
+                        ))}
+
+                        <button type="button" className="step-spotAdd" onClick={openAddSpot}>
+                          <span className="step-spotAddIcon" aria-hidden="true">
+                            📍
+                          </span>
+                          Add another spot
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </section>
 
-                {/* BOTTOM CARD */}
-                <section className="step-card step-bottomGrid">
-                  <div className="step-bottomLeft">
+                {/* OVERVIEW CARD (full width) */}
+                <section className="step-card step-overviewCard">
+                  <div className="step-overviewInner">
                     <div className="step-bottomTitle">Overview of the day</div>
                     <textarea
                       className="step-textarea"
@@ -1193,33 +1197,6 @@ export default function MainPage() {
                       onChange={(e) => setStepOverview(e.target.value)}
                       placeholder="Write a bit about your day"
                     />
-                  </div>
-
-                  <div className="step-divider" />
-
-                  <div className="step-bottomRight">
-                    <div className="step-bottomTitle">Spots you have visited</div>
-
-                    <div className="step-spots">
-                      {stepSpots.map((s) => (
-                        <button
-                          key={s.id || s.name}
-                          type="button"
-                          className="step-spotPill"
-                          onClick={() => onEditExistingSpot(s)}
-                        >
-                          <span className="step-spotThumb" aria-hidden="true" />
-                          <span className="step-spotName">{s.name}</span>
-                        </button>
-                      ))}
-
-                      <button type="button" className="step-spotAdd" onClick={openAddSpot}>
-                        <span className="step-spotAddIcon" aria-hidden="true">
-                          📍
-                        </span>
-                        Add another spot
-                      </button>
-                    </div>
                   </div>
                 </section>
 
@@ -1255,11 +1232,7 @@ export default function MainPage() {
                     <span className="spot-searchIcon" aria-hidden="true">
                       ▢
                     </span>
-                    <input
-                      value={spotQuery}
-                      onChange={(e) => setSpotQuery(e.target.value)}
-                      placeholder="Search a spot"
-                    />
+                    <input value={spotQuery} onChange={(e) => setSpotQuery(e.target.value)} placeholder="Search a spot" />
                   </div>
 
                   {spotErr ? <div className="modal-error">{spotErr}</div> : null}
@@ -1297,7 +1270,7 @@ export default function MainPage() {
       )}
 
       {/* =========================
-          SPOT DETAILS MODAL (NEW)
+          SPOT DETAILS MODAL
          ========================= */}
       {showSpotDetail && spotDraft && (
         <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={closeSpotDetail}>
@@ -1323,7 +1296,7 @@ export default function MainPage() {
                         const f = e.target.files?.[0] || null;
                         setSpotPhotoFile(f);
                         if (f) {
-                          if (f.size > 2 * 1024 * 1024) return; // (optional) keep consistent with 2MB rule
+                          if (f.size > 2 * 1024 * 1024) return;
                           const b64 = await fileToBase64(f);
                           setSpotPhotoPreview(b64);
                         } else {
