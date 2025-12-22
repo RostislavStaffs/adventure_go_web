@@ -25,7 +25,7 @@ function fileToBase64(file) {
   });
 }
 
-// safe local YYYY-MM-DD 
+// safe local YYYY-MM-DD
 function toYYYYMMDD(d) {
   if (!d) return "";
   const yyyy = d.getFullYear();
@@ -44,15 +44,27 @@ function normalizeYYYYMMDD(val) {
 
 function getStepForDate(trip, dateStr) {
   const target = normalizeYYYYMMDD(dateStr);
-  return (
-    trip?.steps?.find((s) => normalizeYYYYMMDD(s.date) === target) || null
-  );
+  return trip?.steps?.find((s) => normalizeYYYYMMDD(s.date) === target) || null;
 }
 
 function formatDateLabel(yyyyMmDd) {
   if (!yyyyMmDd) return "";
   const d = new Date(yyyyMmDd + "T00:00:00");
   return d.toLocaleDateString(undefined, { day: "numeric", month: "long" });
+}
+
+function ordinal(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function formatDateLabelPretty(yyyyMmDd) {
+  if (!yyyyMmDd) return "";
+  const d = new Date(yyyyMmDd + "T00:00:00");
+  const day = d.getDate();
+  const month = d.toLocaleDateString(undefined, { month: "long" });
+  return `${ordinal(day)} of ${month}`;
 }
 
 function addDays(date, n) {
@@ -108,6 +120,12 @@ export default function MainPage() {
   const [showViewTrip, setShowViewTrip] = useState(false); // View modal
   const [activeTrip, setActiveTrip] = useState(null);
 
+  // NEW: View Step modal
+  const [showViewStep, setShowViewStep] = useState(false);
+  const [viewStepTrip, setViewStepTrip] = useState(null);
+  const [viewStep, setViewStep] = useState(null);
+  const [viewPhotoIdx, setViewPhotoIdx] = useState(0);
+
   // delete confirm modal
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
@@ -135,6 +153,7 @@ export default function MainPage() {
   const [stepDate, setStepDate] = useState(""); // input date
   const [stepOverview, setStepOverview] = useState("");
   const [stepPhotos, setStepPhotos] = useState([]); // File[]
+  const [stepExistingPhotos, setStepExistingPhotos] = useState([]); // base64 strings already saved
   const [stepSpots, setStepSpots] = useState([
     // placeholder demo
     { id: "spot1", name: "Café de l’Acadèmia" },
@@ -213,6 +232,7 @@ export default function MainPage() {
         setShowDeleteConfirm(false);
         setShowAddStep(false);
         setShowAddSpot(false);
+        setShowViewStep(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -383,25 +403,62 @@ export default function MainPage() {
     }
   };
 
-  // Open “Add a step” from a day button in View Trip modal
-  const openAddStep = (trip, dateObj) => {
+  // Open “Add a step” from a day button (or from View Step Edit)
+  const openAddStep = (trip, dateObj, existingStep = null) => {
     const iso = toYYYYMMDD(dateObj); // timezone safe
 
     setStepTrip(trip);
     setStepDayISO(iso);
-    setStepName("");
-    setStepDate(iso);
-    setStepOverview("");
-    setStepPhotos([]);
     setStepError("");
 
-    // reset placeholder demo spots
-    setStepSpots([
-      { id: "spot1", name: "Café de l’Acadèmia" },
-      { id: "spot2", name: "Picasso Museum" },
-    ]);
+    // If editing existing step, prefill
+    if (existingStep) {
+      setStepName(existingStep.title || "");
+      setStepDate(normalizeYYYYMMDD(existingStep.date) || iso);
+      setStepOverview(existingStep.overview || "");
+      setStepSpots(Array.isArray(existingStep.spots) ? existingStep.spots : []);
+      setStepExistingPhotos(Array.isArray(existingStep.photos) ? existingStep.photos : []);
+      setStepPhotos([]); // new uploads start empty
+    } else {
+      setStepName("");
+      setStepDate(iso);
+      setStepOverview("");
+      setStepPhotos([]);
+      setStepExistingPhotos([]);
+
+      // reset placeholder demo spots
+      setStepSpots([
+        { id: "spot1", name: "Café de l’Acadèmia" },
+        { id: "spot2", name: "Picasso Museum" },
+      ]);
+    }
 
     setShowAddStep(true);
+  };
+
+  // NEW: open View Step modal from a step card
+  const openViewStepModal = (trip, step) => {
+    setViewStepTrip(trip);
+    setViewStep(step);
+    setViewPhotoIdx(0);
+
+    // swap modals: close trip modal, open step modal
+    setShowViewTrip(false);
+    setShowViewStep(true);
+  };
+
+  const closeViewStepToTrip = () => {
+    setShowViewStep(false);
+    setViewStep(null);
+    setViewStepTrip(null);
+    // return to trip modal
+    if (activeTrip) setShowViewTrip(true);
+  };
+
+  const onEditDayFromViewStep = () => {
+    if (!viewStepTrip || !viewStep) return;
+    setShowViewStep(false);
+    openAddStep(viewStepTrip, new Date(normalizeYYYYMMDD(viewStep.date) + "T00:00:00"), viewStep);
   };
 
   const submitStep = async (e) => {
@@ -417,7 +474,7 @@ export default function MainPage() {
       const token = localStorage.getItem("token");
       if (!token) return setStepError("Not logged in.");
 
-      // photos -> base64
+      // new photos -> base64
       const photosBase64 = [];
       for (const f of stepPhotos || []) {
         if (f.size > 2 * 1024 * 1024) {
@@ -426,6 +483,9 @@ export default function MainPage() {
         }
         photosBase64.push(await fileToBase64(f));
       }
+
+      
+      const finalPhotos = [...(stepExistingPhotos || []), ...photosBase64];
 
       const res = await fetch(`${API_BASE}/api/trips/${activeTrip.id}/steps`, {
         method: "POST",
@@ -437,7 +497,7 @@ export default function MainPage() {
           date: stepDate, // YYYY-MM-DD
           title: stepName.trim(),
           overview: stepOverview.trim(),
-          photos: photosBase64,
+          photos: finalPhotos,
           spots: stepSpots || [],
         }),
       });
@@ -445,15 +505,15 @@ export default function MainPage() {
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.message || "Failed to save step");
 
-      // supports backend returning 
       const updatedApiTrip = data?.trip ?? data;
-
       const updatedUiTrip = toUiTrip(updatedApiTrip);
 
       // update trips list
-      setTrips((prev) => prev.map((t) => (t.id === updatedUiTrip.id ? updatedUiTrip : t)));
+      setTrips((prev) =>
+        prev.map((t) => (t.id === updatedUiTrip.id ? updatedUiTrip : t))
+      );
 
-      // keep activeTrip in sync (this is what triggers timeline re-render)
+      // keep activeTrip in sync
       setActiveTrip(updatedUiTrip);
 
       setShowAddStep(false);
@@ -482,6 +542,10 @@ export default function MainPage() {
   const filteredSpots = spotResults.filter((s) =>
     s.name.toLowerCase().includes(spotQuery.trim().toLowerCase())
   );
+
+  // tiny helper for Highlights quote (simple placeholder)
+  const makeHighlightQuote = (spotName) =>
+    `“${spotName} was one of the best moments of the day.”`;
 
   return (
     <div className="main-page">
@@ -619,12 +683,7 @@ export default function MainPage() {
           ADD / EDIT TRIP MODAL
          ========================= */}
       {showTripForm && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={() => setShowTripForm(false)}
-        >
+        <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={() => setShowTripForm(false)}>
           <div className="modal-card modal-addTrip" onMouseDown={(e) => e.stopPropagation()}>
             <div className="modal-topRow">
               <button className="modal-back" type="button" onClick={() => setShowTripForm(false)}>
@@ -653,12 +712,7 @@ export default function MainPage() {
                   <>
                     <div className="cover-icon" aria-hidden="true">
                       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                        <path
-                          d="M12 3v12"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
-                          strokeLinecap="round"
-                        />
+                        <path d="M12 3v12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
                         <path
                           d="M7 8l5-5 5 5"
                           stroke="currentColor"
@@ -666,12 +720,7 @@ export default function MainPage() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
-                        <path
-                          d="M5 21h14"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
-                          strokeLinecap="round"
-                        />
+                        <path d="M5 21h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
                       </svg>
                     </div>
                     <div className="cover-text">Upload a cover photo</div>
@@ -687,42 +736,24 @@ export default function MainPage() {
                 <div>
                   <label className="addTrip-label">Destination</label>
                   <div className="addTrip-inputWrap">
-                    <span className="addTrip-icon" aria-hidden="true">
-                      🔎
-                    </span>
-                    <input
-                      value={destination}
-                      onChange={(e) => setDestination(e.target.value)}
-                      placeholder="Select a destination"
-                    />
+                    <span className="addTrip-icon" aria-hidden="true">🔎</span>
+                    <input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Select a destination" />
                   </div>
                 </div>
 
                 <div>
                   <label className="addTrip-label">Arrival Date</label>
                   <div className="addTrip-inputWrap">
-                    <span className="addTrip-icon" aria-hidden="true">
-                      📅
-                    </span>
-                    <input
-                      type="date"
-                      value={arrivalDate}
-                      onChange={(e) => setArrivalDate(e.target.value)}
-                    />
+                    <span className="addTrip-icon" aria-hidden="true">📅</span>
+                    <input type="date" value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)} />
                   </div>
                 </div>
 
                 <div>
                   <label className="addTrip-label">Departure Date</label>
                   <div className="addTrip-inputWrap">
-                    <span className="addTrip-icon" aria-hidden="true">
-                      📅
-                    </span>
-                    <input
-                      type="date"
-                      value={departureDate}
-                      onChange={(e) => setDepartureDate(e.target.value)}
-                    />
+                    <span className="addTrip-icon" aria-hidden="true">📅</span>
+                    <input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -731,14 +762,8 @@ export default function MainPage() {
                 <div>
                   <label className="addTrip-label">Name your Trip</label>
                   <div className="addTrip-inputWrap">
-                    <span className="addTrip-icon" aria-hidden="true">
-                      🏷️
-                    </span>
-                    <input
-                      value={tripName}
-                      onChange={(e) => setTripName(e.target.value)}
-                      placeholder="Name your trip"
-                    />
+                    <span className="addTrip-icon" aria-hidden="true">🏷️</span>
+                    <input value={tripName} onChange={(e) => setTripName(e.target.value)} placeholder="Name your trip" />
                   </div>
                 </div>
               </div>
@@ -747,11 +772,7 @@ export default function MainPage() {
                 <div>
                   <label className="addTrip-label">Add a summary of your trip</label>
                   <div className="addTrip-textareaWrap">
-                    <textarea
-                      value={summary}
-                      onChange={(e) => setSummary(e.target.value)}
-                      placeholder="Add a quick summary"
-                    />
+                    <textarea value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Add a quick summary" />
                   </div>
                 </div>
               </div>
@@ -770,12 +791,7 @@ export default function MainPage() {
           VIEW TRIP MODAL
          ========================= */}
       {showViewTrip && activeTrip && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={() => setShowViewTrip(false)}
-        >
+        <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={() => setShowViewTrip(false)}>
           <div className="modal-card modal-viewTrip" onMouseDown={(e) => e.stopPropagation()}>
             <div className="modal-topRow viewTopRow">
               <button className="modal-back" type="button" onClick={() => setShowViewTrip(false)}>
@@ -785,11 +801,7 @@ export default function MainPage() {
               <div className="modal-title">{activeTrip.title}</div>
 
               <div className="viewTrip-actionsTop">
-                <button
-                  type="button"
-                  className="viewTrip-danger"
-                  onClick={() => askDeleteTrip(activeTrip)}
-                >
+                <button type="button" className="viewTrip-danger" onClick={() => askDeleteTrip(activeTrip)}>
                   Delete Trip
                 </button>
                 <button
@@ -811,15 +823,13 @@ export default function MainPage() {
 
             <div className="viewTrip-meta">
               <div className="viewTrip-sub">
-                {activeTrip.location} • {formatDateLabel(activeTrip.arrivalDate)} –{" "}
-                {formatDateLabel(activeTrip.departureDate)}
+                {activeTrip.location} • {formatDateLabel(activeTrip.arrivalDate)} – {formatDateLabel(activeTrip.departureDate)}
               </div>
               {activeTrip.summary && <div className="viewTrip-summary">{activeTrip.summary}</div>}
             </div>
 
             <div className="viewTrip-timelineTitle">Timeline</div>
 
-            {/* timeline now shows Step card if exists, else + */}
             <div className="viewTrip-days">
               {daysBetweenInclusive(activeTrip.arrivalDate, activeTrip.departureDate).map((d) => {
                 const dayStr = toYYYYMMDD(d);
@@ -830,8 +840,7 @@ export default function MainPage() {
                     key={dayStr}
                     className="timeline-stepCard"
                     type="button"
-                    onClick={() => openAddStep(activeTrip, new Date(dayStr + "T00:00:00"))}
-                    title="Step saved (click to edit later)"
+                    onClick={() => openViewStepModal(activeTrip, step)} //open View Step modal
                   >
                     <div className="timeline-stepThumb">
                       {step.photos?.[0] ? <img src={step.photos[0]} alt="" /> : null}
@@ -863,15 +872,109 @@ export default function MainPage() {
       )}
 
       {/* =========================
+          VIEW STEP MODAL (NEW)
+         ========================= */}
+      {showViewStep && viewStepTrip && viewStep && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={closeViewStepToTrip}>
+          <div className="modal-card modal-viewStep" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-topRow viewStepTopRow">
+              <button className="modal-back" type="button" onClick={closeViewStepToTrip}>
+                ←
+              </button>
+
+              <div className="modal-title">{viewStep.title || "View Step"}</div>
+
+              <div className="viewStepTopActions">
+                <button type="button" className="viewStepEditBtn" onClick={onEditDayFromViewStep}>
+                  Edit day
+                </button>
+              </div>
+            </div>
+
+            <div className="viewStep-body">
+              <div className="viewStep-topGrid">
+                {/* Photo */}
+                <div className="viewStep-photoWrap">
+                  <div className="viewStep-photoFrame">
+                    {viewStep.photos?.length ? (
+                      <img src={viewStep.photos[Math.min(viewPhotoIdx, viewStep.photos.length - 1)]} alt="" />
+                    ) : (
+                      <div className="viewStep-photoPlaceholder">No photo</div>
+                    )}
+
+                    {viewStep.photos?.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          className="viewStep-arrow viewStep-arrowLeft"
+                          onClick={() =>
+                            setViewPhotoIdx((p) => (p - 1 + viewStep.photos.length) % viewStep.photos.length)
+                          }
+                          aria-label="Previous photo"
+                        >
+                          ‹
+                        </button>
+                        <button
+                          type="button"
+                          className="viewStep-arrow viewStep-arrowRight"
+                          onClick={() => setViewPhotoIdx((p) => (p + 1) % viewStep.photos.length)}
+                          aria-label="Next photo"
+                        >
+                          ›
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Overview */}
+                <div className="viewStep-overviewCard">
+                  <div className="viewStep-overviewHeader">
+                    <div className="viewStep-overviewTitle">Overview of the day</div>
+                    <div className="viewStep-overviewDate">{formatDateLabelPretty(normalizeYYYYMMDD(viewStep.date))}</div>
+                  </div>
+
+                  <div className="viewStep-overviewText">
+                    {viewStep.overview || "No overview written yet."}
+                  </div>
+                </div>
+              </div>
+
+              <div className="viewStep-highlightsTitle">Highlights</div>
+
+              <div className="viewStep-highlightsGrid">
+                {(viewStep.spots?.length ? viewStep.spots : []).slice(0, 3).map((spot, idx) => (
+                  <div key={spot.id || `${spot.name}_${idx}`} className="viewStep-highlightCard">
+                    <div className="viewStep-highlightName">{spot.name}</div>
+                    <div className="viewStep-highlightQuote">{makeHighlightQuote(spot.name)}</div>
+
+                    <div className="viewStep-highlightImg">
+                      {viewStep.photos?.[idx] ? <img src={viewStep.photos[idx]} alt="" /> : <div className="viewStep-highlightImgPh" />}
+                    </div>
+                  </div>
+                ))}
+
+                {/* if fewer than 3 spots, show placeholders for layout consistency */}
+                {Array.from({ length: Math.max(0, 3 - (viewStep.spots?.length || 0)) }).map((_, i) => (
+                  <div key={`ph_${i}`} className="viewStep-highlightCard viewStep-highlightCardPh">
+                    <div className="viewStep-highlightName">No spot</div>
+                    <div className="viewStep-highlightQuote">“Add spots to see highlights here.”</div>
+                    <div className="viewStep-highlightImg">
+                      <div className="viewStep-highlightImgPh" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================
           ADD A STEP MODAL
          ========================= */}
       {showAddStep && stepTrip && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={() => setShowAddStep(false)}
-        >
+        <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={() => setShowAddStep(false)}>
           <div className="modal-card modal-step" onMouseDown={(e) => e.stopPropagation()}>
             <div className="modal-topRow stepTopRow">
               <button className="modal-back" type="button" onClick={() => setShowAddStep(false)}>
@@ -897,9 +1000,7 @@ export default function MainPage() {
                     <div className="step-map">
                       <div className="step-mapInner">
                         <div className="step-mapHint">Map coming soon</div>
-                        <div className="step-mapSub">
-                          (We’ll connect Geo APIs later — for now this is a placeholder)
-                        </div>
+                        <div className="step-mapSub">(We’ll connect Geo APIs later — for now this is a placeholder)</div>
                       </div>
                     </div>
 
@@ -909,9 +1010,7 @@ export default function MainPage() {
                       <div className="step-group">
                         <div className="step-h">Name this step</div>
                         <div className="step-pill">
-                          <span className="step-icon" aria-hidden="true">
-                            🏷️
-                          </span>
+                          <span className="step-icon" aria-hidden="true">🏷️</span>
                           <input
                             value={stepName}
                             onChange={(e) => setStepName(e.target.value)}
@@ -923,14 +1022,8 @@ export default function MainPage() {
                       <div className="step-group">
                         <div className="step-h">Date</div>
                         <div className="step-pill step-pillShort">
-                          <span className="step-icon" aria-hidden="true">
-                            📅
-                          </span>
-                          <input
-                            type="date"
-                            value={stepDate}
-                            onChange={(e) => setStepDate(e.target.value)}
-                          />
+                          <span className="step-icon" aria-hidden="true">📅</span>
+                          <input type="date" value={stepDate} onChange={(e) => setStepDate(e.target.value)} />
                         </div>
                       </div>
 
@@ -946,11 +1039,17 @@ export default function MainPage() {
                             }}
                             style={{ display: "none" }}
                           />
-                          <span className="step-photoIcon" aria-hidden="true">
-                            📷
-                          </span>
+                          <span className="step-photoIcon" aria-hidden="true">📷</span>
                         </label>
-                        <div className="step-photoText">Add photos</div>
+
+                        <div className="step-photoText">
+                          Add photos{" "}
+                          {(stepExistingPhotos?.length || stepPhotos?.length) ? (
+                            <span style={{ opacity: 0.7, marginLeft: 6 }}>
+                              ({(stepExistingPhotos?.length || 0) + (stepPhotos?.length || 0)})
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -975,16 +1074,14 @@ export default function MainPage() {
 
                     <div className="step-spots">
                       {stepSpots.map((s) => (
-                        <div key={s.id} className="step-spotPill">
+                        <div key={s.id || s.name} className="step-spotPill">
                           <span className="step-spotThumb" aria-hidden="true" />
                           <span className="step-spotName">{s.name}</span>
                         </div>
                       ))}
 
                       <button type="button" className="step-spotAdd" onClick={openAddSpot}>
-                        <span className="step-spotAddIcon" aria-hidden="true">
-                          📍
-                        </span>
+                        <span className="step-spotAddIcon" aria-hidden="true">📍</span>
                         Add another spot
                       </button>
                     </div>
@@ -1002,12 +1099,7 @@ export default function MainPage() {
           ADD A SPOT MODAL
          ========================= */}
       {showAddSpot && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={() => setShowAddSpot(false)}
-        >
+        <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={() => setShowAddSpot(false)}>
           <div className="modal-card modal-spot" onMouseDown={(e) => e.stopPropagation()}>
             <div className="modal-topRow spotTopRow">
               <button className="modal-back" type="button" onClick={() => setShowAddSpot(false)}>
@@ -1025,24 +1117,13 @@ export default function MainPage() {
                   <div className="spot-heading">Pick a spot</div>
 
                   <div className="spot-search">
-                    <span className="spot-searchIcon" aria-hidden="true">
-                      ▢
-                    </span>
-                    <input
-                      value={spotQuery}
-                      onChange={(e) => setSpotQuery(e.target.value)}
-                      placeholder="Search a spot"
-                    />
+                    <span className="spot-searchIcon" aria-hidden="true">▢</span>
+                    <input value={spotQuery} onChange={(e) => setSpotQuery(e.target.value)} placeholder="Search a spot" />
                   </div>
 
                   <div className="spot-list">
                     {(filteredSpots.length ? filteredSpots : spotResults).map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        className="spot-item"
-                        onClick={() => selectSpot(s)}
-                      >
+                      <button key={s.id} type="button" className="spot-item" onClick={() => selectSpot(s)}>
                         <span className="spot-thumb" aria-hidden="true" />
                         <span className="spot-name">{s.name}</span>
                       </button>
@@ -1059,12 +1140,7 @@ export default function MainPage() {
           DELETE CONFIRM MODAL
          ========================= */}
       {showDeleteConfirm && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={() => setShowDeleteConfirm(false)}
-        >
+        <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={() => setShowDeleteConfirm(false)}>
           <div className="confirm-card" onMouseDown={(e) => e.stopPropagation()}>
             <h2>Are you sure you want to delete this trip?</h2>
 
@@ -1072,11 +1148,7 @@ export default function MainPage() {
               <button className="confirm-yes" type="button" onClick={confirmDeleteTrip}>
                 Yes
               </button>
-              <button
-                className="confirm-no"
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
+              <button className="confirm-no" type="button" onClick={() => setShowDeleteConfirm(false)}>
                 No
               </button>
             </div>
