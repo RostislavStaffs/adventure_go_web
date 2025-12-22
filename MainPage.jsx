@@ -120,7 +120,7 @@ export default function MainPage() {
   const [showViewTrip, setShowViewTrip] = useState(false); // View modal
   const [activeTrip, setActiveTrip] = useState(null);
 
-  // NEW: View Step modal
+  // View Step modal
   const [showViewStep, setShowViewStep] = useState(false);
   const [viewStepTrip, setViewStepTrip] = useState(null);
   const [viewStep, setViewStep] = useState(null);
@@ -155,22 +155,30 @@ export default function MainPage() {
   const [stepPhotos, setStepPhotos] = useState([]); // File[]
   const [stepExistingPhotos, setStepExistingPhotos] = useState([]); // base64 strings already saved
   const [stepSpots, setStepSpots] = useState([
-    // placeholder demo
-    { id: "spot1", name: "Café de l’Acadèmia" },
-    { id: "spot2", name: "Picasso Museum" },
+    // placeholder demo (will be overwritten by real spots per step)
+    { id: "spot1", name: "Café de l’Acadèmia", note: "", photo: "", photon: null },
+    { id: "spot2", name: "Picasso Museum", note: "", photo: "", photon: null },
   ]);
   const [stepError, setStepError] = useState("");
 
-  // Add “Add a spot” modal state
+  // =========================
+  // Add “Add a spot” modal state + Photon search
+  // =========================
   const [showAddSpot, setShowAddSpot] = useState(false);
   const [spotQuery, setSpotQuery] = useState("");
-  const [spotResults] = useState([
-    { id: "s1", name: "Café de l’Acadèmia" },
-    { id: "s2", name: "Picasso Museum" },
-    { id: "s3", name: "Picasso Museum" },
-    { id: "s4", name: "Picasso Museum" },
-    { id: "s5", name: "Picasso Museum" },
-  ]);
+  const [spotResults, setSpotResults] = useState([]); // Photon-mapped results
+  const [spotLoading, setSpotLoading] = useState(false);
+  const [spotErr, setSpotErr] = useState("");
+
+  // =========================
+  // Spot Details modal state (NEW)
+  // =========================
+  const [showSpotDetail, setShowSpotDetail] = useState(false);
+  const [spotDraft, setSpotDraft] = useState(null); // currently picked/edited spot object
+  const [spotNote, setSpotNote] = useState("");
+  const [spotPhotoFile, setSpotPhotoFile] = useState(null);
+  const [spotPhotoPreview, setSpotPhotoPreview] = useState("");
+  const [editingSpotId, setEditingSpotId] = useState(null); // null for new, else existing spot.id
 
   const authHeaders = () => {
     const t = localStorage.getItem("token");
@@ -233,6 +241,13 @@ export default function MainPage() {
         setShowAddStep(false);
         setShowAddSpot(false);
         setShowViewStep(false);
+
+        setShowSpotDetail(false);
+        setSpotDraft(null);
+        setSpotNote("");
+        setSpotPhotoFile(null);
+        setSpotPhotoPreview("");
+        setEditingSpotId(null);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -281,8 +296,7 @@ export default function MainPage() {
     if (!destination.trim()) return setFormError("Please select a destination.");
     if (!arrivalDate) return setFormError("Please select an arrival date.");
     if (!departureDate) return setFormError("Please select a departure date.");
-    if (departureDate < arrivalDate)
-      return setFormError("Departure date must be after arrival date.");
+    if (departureDate < arrivalDate) return setFormError("Departure date must be after arrival date.");
     if (!tripName.trim()) return setFormError("Please name your trip.");
 
     // client-side protection from 413
@@ -346,9 +360,7 @@ export default function MainPage() {
 
         const updatedUiTrip = toUiTrip(data);
 
-        setTrips((prev) =>
-          prev.map((t) => (t.id === editingTripId ? updatedUiTrip : t))
-        );
+        setTrips((prev) => prev.map((t) => (t.id === editingTripId ? updatedUiTrip : t)));
 
         if (activeTrip?.id === editingTripId) {
           setActiveTrip(updatedUiTrip);
@@ -426,23 +438,23 @@ export default function MainPage() {
       setStepPhotos([]);
       setStepExistingPhotos([]);
 
-      // reset placeholder demo spots
+      // demo only (you can remove these defaults later)
       setStepSpots([
-        { id: "spot1", name: "Café de l’Acadèmia" },
-        { id: "spot2", name: "Picasso Museum" },
+        { id: "spot1", name: "Café de l’Acadèmia", note: "", photo: "", photon: null },
+        { id: "spot2", name: "Picasso Museum", note: "", photo: "", photon: null },
       ]);
     }
 
     setShowAddStep(true);
   };
 
-  // NEW: open View Step modal from a step card
+  // open View Step modal from a step card
   const openViewStepModal = (trip, step) => {
     setViewStepTrip(trip);
     setViewStep(step);
     setViewPhotoIdx(0);
 
-    // swap modals: close trip modal, open step modal
+    // swap modals
     setShowViewTrip(false);
     setShowViewStep(true);
   };
@@ -451,7 +463,6 @@ export default function MainPage() {
     setShowViewStep(false);
     setViewStep(null);
     setViewStepTrip(null);
-    // return to trip modal
     if (activeTrip) setShowViewTrip(true);
   };
 
@@ -484,7 +495,6 @@ export default function MainPage() {
         photosBase64.push(await fileToBase64(f));
       }
 
-      
       const finalPhotos = [...(stepExistingPhotos || []), ...photosBase64];
 
       const res = await fetch(`${API_BASE}/api/trips/${activeTrip.id}/steps`, {
@@ -498,7 +508,7 @@ export default function MainPage() {
           title: stepName.trim(),
           overview: stepOverview.trim(),
           photos: finalPhotos,
-          spots: stepSpots || [],
+          spots: stepSpots || [], // array of { name, note, photo
         }),
       });
 
@@ -508,12 +518,7 @@ export default function MainPage() {
       const updatedApiTrip = data?.trip ?? data;
       const updatedUiTrip = toUiTrip(updatedApiTrip);
 
-      // update trips list
-      setTrips((prev) =>
-        prev.map((t) => (t.id === updatedUiTrip.id ? updatedUiTrip : t))
-      );
-
-      // keep activeTrip in sync
+      setTrips((prev) => prev.map((t) => (t.id === updatedUiTrip.id ? updatedUiTrip : t)));
       setActiveTrip(updatedUiTrip);
 
       setShowAddStep(false);
@@ -526,26 +531,130 @@ export default function MainPage() {
   // Open “Add a spot” modal from Add Step
   const openAddSpot = () => {
     setSpotQuery("");
+    setSpotResults([]);
+    setSpotErr("");
     setShowAddSpot(true);
   };
 
-  // Demo select spot for UI preview only
-  const selectSpot = (spot) => {
-    setStepSpots((prev) => {
-      const exists = prev.some((p) => p.name === spot.name);
-      if (exists) return prev;
-      return [...prev, { id: `spot_${crypto.randomUUID()}`, name: spot.name }];
-    });
+  // Photon search (debounced)
+  useEffect(() => {
+    if (!showAddSpot) return;
+
+    const q = spotQuery.trim();
+    if (q.length < 2) {
+      setSpotResults([]);
+      setSpotErr("");
+      return;
+    }
+
+    const t = setTimeout(async () => {
+      try {
+        setSpotLoading(true);
+        setSpotErr("");
+
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=7`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Photon request failed");
+
+        const data = await res.json();
+        const features = Array.isArray(data?.features) ? data.features : [];
+
+        const mapped = features.map((f) => {
+          const p = f.properties || {};
+          const coords = f.geometry?.coordinates || [];
+          return {
+            // internal UI id (stable for selection)
+            id: `ph_${p.osm_type || ""}_${p.osm_id || ""}_${crypto.randomUUID()}`,
+            name: p.name || p.street || p.city || "Unknown place",
+            photon: {
+              osm_id: p.osm_id,
+              osm_type: p.osm_type,
+              lat: coords[1],
+              lon: coords[0],
+              country: p.country,
+              city: p.city,
+              postcode: p.postcode,
+              street: p.street,
+              housenumber: p.housenumber,
+            },
+            note: "",
+            photo: "",
+          };
+        });
+
+        setSpotResults(mapped);
+      } catch (e) {
+        setSpotErr(e?.message || "Failed to search places");
+        setSpotResults([]);
+      } finally {
+        setSpotLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(t);
+  }, [spotQuery, showAddSpot]);
+
+  // click photon result -> open spot detail modal
+  const onPickPhotonSpot = (photonSpot) => {
+    setSpotDraft(photonSpot);
+    setSpotNote("");
+    setSpotPhotoFile(null);
+    setSpotPhotoPreview("");
+    setEditingSpotId(null);
+
     setShowAddSpot(false);
+    setShowSpotDetail(true);
   };
 
-  const filteredSpots = spotResults.filter((s) =>
-    s.name.toLowerCase().includes(spotQuery.trim().toLowerCase())
-  );
+  // click existing step spot -> edit in spot detail modal
+  const onEditExistingSpot = (spot) => {
+    setSpotDraft(spot);
+    setSpotNote(spot?.note || "");
+    setSpotPhotoFile(null);
+    setSpotPhotoPreview(spot?.photo || "");
+    setEditingSpotId(spot?.id || null);
+    setShowSpotDetail(true);
+  };
 
-  // tiny helper for Highlights quote (simple placeholder)
-  const makeHighlightQuote = (spotName) =>
-    `“${spotName} was one of the best moments of the day.”`;
+  const closeSpotDetail = () => {
+    setShowSpotDetail(false);
+    setSpotDraft(null);
+    setSpotNote("");
+    setSpotPhotoFile(null);
+    setSpotPhotoPreview("");
+    setEditingSpotId(null);
+  };
+
+  const saveSpotDetail = () => {
+    if (!spotDraft) return;
+
+    const finalSpot = {
+      ...spotDraft,
+      // ensure we store our own id that remains stable inside the step
+      id: editingSpotId || `spot_${crypto.randomUUID()}`,
+      note: (spotNote || "").trim(),
+      photo: spotPhotoPreview || spotDraft.photo || "",
+    };
+
+    setStepSpots((prev) => {
+      // update existing
+      if (editingSpotId) {
+        return prev.map((s) => (s.id === editingSpotId ? finalSpot : s));
+      }
+      // prevent duplicates by same osm_id if present, else by name
+      const prevHasSame =
+        prev.some((p) => p?.photon?.osm_id && finalSpot?.photon?.osm_id && p.photon.osm_id === finalSpot.photon.osm_id) ||
+        prev.some((p) => (p?.name || "").toLowerCase() === (finalSpot?.name || "").toLowerCase());
+
+      if (prevHasSame) return prev;
+      return [...prev, finalSpot];
+    });
+
+    closeSpotDetail();
+  };
+
+  // tiny helper for Highlights fallback quote
+  const makeHighlightQuote = (spotName) => `“${spotName} was one of the best moments of the day.”`;
 
   return (
     <div className="main-page">
@@ -606,13 +715,7 @@ export default function MainPage() {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
-                          <circle
-                            cx="12"
-                            cy="10"
-                            r="2.2"
-                            stroke="currentColor"
-                            strokeWidth="1.7"
-                          />
+                          <circle cx="12" cy="10" r="2.2" stroke="currentColor" strokeWidth="1.7" />
                         </svg>
                       </span>
                       {t.location}
@@ -653,8 +756,8 @@ export default function MainPage() {
           <div className="footer-brand">
             <h3>Adventure GO</h3>
             <p>
-              Where every journey becomes a chapter in your story. Record your adventures and
-              revisit the moments that matter.
+              Where every journey becomes a chapter in your story. Record your adventures and revisit the moments that
+              matter.
             </p>
             <p className="footer-copy">©2025 Adventure Go. All rights reserved.</p>
           </div>
@@ -736,15 +839,23 @@ export default function MainPage() {
                 <div>
                   <label className="addTrip-label">Destination</label>
                   <div className="addTrip-inputWrap">
-                    <span className="addTrip-icon" aria-hidden="true">🔎</span>
-                    <input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Select a destination" />
+                    <span className="addTrip-icon" aria-hidden="true">
+                      🔎
+                    </span>
+                    <input
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                      placeholder="Select a destination"
+                    />
                   </div>
                 </div>
 
                 <div>
                   <label className="addTrip-label">Arrival Date</label>
                   <div className="addTrip-inputWrap">
-                    <span className="addTrip-icon" aria-hidden="true">📅</span>
+                    <span className="addTrip-icon" aria-hidden="true">
+                      📅
+                    </span>
                     <input type="date" value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)} />
                   </div>
                 </div>
@@ -752,7 +863,9 @@ export default function MainPage() {
                 <div>
                   <label className="addTrip-label">Departure Date</label>
                   <div className="addTrip-inputWrap">
-                    <span className="addTrip-icon" aria-hidden="true">📅</span>
+                    <span className="addTrip-icon" aria-hidden="true">
+                      📅
+                    </span>
                     <input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} />
                   </div>
                 </div>
@@ -762,7 +875,9 @@ export default function MainPage() {
                 <div>
                   <label className="addTrip-label">Name your Trip</label>
                   <div className="addTrip-inputWrap">
-                    <span className="addTrip-icon" aria-hidden="true">🏷️</span>
+                    <span className="addTrip-icon" aria-hidden="true">
+                      🏷️
+                    </span>
                     <input value={tripName} onChange={(e) => setTripName(e.target.value)} placeholder="Name your trip" />
                   </div>
                 </div>
@@ -772,7 +887,11 @@ export default function MainPage() {
                 <div>
                   <label className="addTrip-label">Add a summary of your trip</label>
                   <div className="addTrip-textareaWrap">
-                    <textarea value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Add a quick summary" />
+                    <textarea
+                      value={summary}
+                      onChange={(e) => setSummary(e.target.value)}
+                      placeholder="Add a quick summary"
+                    />
                   </div>
                 </div>
               </div>
@@ -840,7 +959,7 @@ export default function MainPage() {
                     key={dayStr}
                     className="timeline-stepCard"
                     type="button"
-                    onClick={() => openViewStepModal(activeTrip, step)} //open View Step modal
+                    onClick={() => openViewStepModal(activeTrip, step)}
                   >
                     <div className="timeline-stepThumb">
                       {step.photos?.[0] ? <img src={step.photos[0]} alt="" /> : null}
@@ -872,7 +991,7 @@ export default function MainPage() {
       )}
 
       {/* =========================
-          VIEW STEP MODAL (NEW)
+          VIEW STEP MODAL
          ========================= */}
       {showViewStep && viewStepTrip && viewStep && (
         <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={closeViewStepToTrip}>
@@ -907,9 +1026,7 @@ export default function MainPage() {
                         <button
                           type="button"
                           className="viewStep-arrow viewStep-arrowLeft"
-                          onClick={() =>
-                            setViewPhotoIdx((p) => (p - 1 + viewStep.photos.length) % viewStep.photos.length)
-                          }
+                          onClick={() => setViewPhotoIdx((p) => (p - 1 + viewStep.photos.length) % viewStep.photos.length)}
                           aria-label="Previous photo"
                         >
                           ‹
@@ -934,9 +1051,7 @@ export default function MainPage() {
                     <div className="viewStep-overviewDate">{formatDateLabelPretty(normalizeYYYYMMDD(viewStep.date))}</div>
                   </div>
 
-                  <div className="viewStep-overviewText">
-                    {viewStep.overview || "No overview written yet."}
-                  </div>
+                  <div className="viewStep-overviewText">{viewStep.overview || "No overview written yet."}</div>
                 </div>
               </div>
 
@@ -946,15 +1061,22 @@ export default function MainPage() {
                 {(viewStep.spots?.length ? viewStep.spots : []).slice(0, 3).map((spot, idx) => (
                   <div key={spot.id || `${spot.name}_${idx}`} className="viewStep-highlightCard">
                     <div className="viewStep-highlightName">{spot.name}</div>
-                    <div className="viewStep-highlightQuote">{makeHighlightQuote(spot.name)}</div>
+
+                    <div className="viewStep-highlightQuote">
+                      {spot?.note?.trim() ? `“${spot.note.trim()}”` : makeHighlightQuote(spot.name)}
+                    </div>
 
                     <div className="viewStep-highlightImg">
-                      {viewStep.photos?.[idx] ? <img src={viewStep.photos[idx]} alt="" /> : <div className="viewStep-highlightImgPh" />}
+                      {spot?.photo ? (
+                        <img src={spot.photo} alt="" />
+                      ) : (
+                        <div className="viewStep-highlightImgPh" />
+                      )}
                     </div>
                   </div>
                 ))}
 
-                {/* if fewer than 3 spots, show placeholders for layout consistency */}
+                {/* if fewer than 3 spots, show placeholders */}
                 {Array.from({ length: Math.max(0, 3 - (viewStep.spots?.length || 0)) }).map((_, i) => (
                   <div key={`ph_${i}`} className="viewStep-highlightCard viewStep-highlightCardPh">
                     <div className="viewStep-highlightName">No spot</div>
@@ -1010,7 +1132,9 @@ export default function MainPage() {
                       <div className="step-group">
                         <div className="step-h">Name this step</div>
                         <div className="step-pill">
-                          <span className="step-icon" aria-hidden="true">🏷️</span>
+                          <span className="step-icon" aria-hidden="true">
+                            🏷️
+                          </span>
                           <input
                             value={stepName}
                             onChange={(e) => setStepName(e.target.value)}
@@ -1022,7 +1146,9 @@ export default function MainPage() {
                       <div className="step-group">
                         <div className="step-h">Date</div>
                         <div className="step-pill step-pillShort">
-                          <span className="step-icon" aria-hidden="true">📅</span>
+                          <span className="step-icon" aria-hidden="true">
+                            📅
+                          </span>
                           <input type="date" value={stepDate} onChange={(e) => setStepDate(e.target.value)} />
                         </div>
                       </div>
@@ -1039,7 +1165,9 @@ export default function MainPage() {
                             }}
                             style={{ display: "none" }}
                           />
-                          <span className="step-photoIcon" aria-hidden="true">📷</span>
+                          <span className="step-photoIcon" aria-hidden="true">
+                            📷
+                          </span>
                         </label>
 
                         <div className="step-photoText">
@@ -1074,14 +1202,21 @@ export default function MainPage() {
 
                     <div className="step-spots">
                       {stepSpots.map((s) => (
-                        <div key={s.id || s.name} className="step-spotPill">
+                        <button
+                          key={s.id || s.name}
+                          type="button"
+                          className="step-spotPill"
+                          onClick={() => onEditExistingSpot(s)}
+                        >
                           <span className="step-spotThumb" aria-hidden="true" />
                           <span className="step-spotName">{s.name}</span>
-                        </div>
+                        </button>
                       ))}
 
                       <button type="button" className="step-spotAdd" onClick={openAddSpot}>
-                        <span className="step-spotAddIcon" aria-hidden="true">📍</span>
+                        <span className="step-spotAddIcon" aria-hidden="true">
+                          📍
+                        </span>
                         Add another spot
                       </button>
                     </div>
@@ -1096,7 +1231,7 @@ export default function MainPage() {
       )}
 
       {/* =========================
-          ADD A SPOT MODAL
+          ADD A SPOT MODAL (Photon)
          ========================= */}
       {showAddSpot && (
         <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={() => setShowAddSpot(false)}>
@@ -1117,18 +1252,111 @@ export default function MainPage() {
                   <div className="spot-heading">Pick a spot</div>
 
                   <div className="spot-search">
-                    <span className="spot-searchIcon" aria-hidden="true">▢</span>
-                    <input value={spotQuery} onChange={(e) => setSpotQuery(e.target.value)} placeholder="Search a spot" />
+                    <span className="spot-searchIcon" aria-hidden="true">
+                      ▢
+                    </span>
+                    <input
+                      value={spotQuery}
+                      onChange={(e) => setSpotQuery(e.target.value)}
+                      placeholder="Search a spot"
+                    />
                   </div>
 
+                  {spotErr ? <div className="modal-error">{spotErr}</div> : null}
+                  {spotLoading ? (
+                    <div style={{ textAlign: "center", fontWeight: 800, opacity: 0.7, padding: "10px 0" }}>
+                      Searching…
+                    </div>
+                  ) : null}
+
                   <div className="spot-list">
-                    {(filteredSpots.length ? filteredSpots : spotResults).map((s) => (
-                      <button key={s.id} type="button" className="spot-item" onClick={() => selectSpot(s)}>
+                    {(spotResults.length ? spotResults : []).map((s) => (
+                      <button key={s.id} type="button" className="spot-item" onClick={() => onPickPhotonSpot(s)}>
                         <span className="spot-thumb" aria-hidden="true" />
                         <span className="spot-name">{s.name}</span>
                       </button>
                     ))}
+
+                    {!spotLoading && !spotErr && spotQuery.trim().length >= 2 && spotResults.length === 0 ? (
+                      <div style={{ textAlign: "center", opacity: 0.7, fontWeight: 700, padding: "8px 0" }}>
+                        No results. Try another search.
+                      </div>
+                    ) : null}
+
+                    {spotQuery.trim().length < 2 ? (
+                      <div style={{ textAlign: "center", opacity: 0.7, fontWeight: 700, padding: "8px 0" }}>
+                        Type at least 2 characters to search.
+                      </div>
+                    ) : null}
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================
+          SPOT DETAILS MODAL (NEW)
+         ========================= */}
+      {showSpotDetail && spotDraft && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={closeSpotDetail}>
+          <div className="modal-card modal-spotDetail" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-topRow spotTopRow">
+              <button className="modal-back" type="button" onClick={closeSpotDetail}>
+                ←
+              </button>
+
+              <div className="modal-title">Add a spot</div>
+
+              <div className="modal-spacer" />
+            </div>
+
+            <div className="spotDetail-body">
+              <div className="spotDetail-card">
+                <div className="spotDetail-left">
+                  <label className="spotDetail-photo">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0] || null;
+                        setSpotPhotoFile(f);
+                        if (f) {
+                          if (f.size > 2 * 1024 * 1024) return; // (optional) keep consistent with 2MB rule
+                          const b64 = await fileToBase64(f);
+                          setSpotPhotoPreview(b64);
+                        } else {
+                          setSpotPhotoPreview("");
+                        }
+                      }}
+                      style={{ display: "none" }}
+                    />
+
+                    {spotPhotoPreview ? (
+                      <img src={spotPhotoPreview} alt="" />
+                    ) : (
+                      <div className="spotDetail-photoPlaceholder">
+                        <div className="spotDetail-photoIcon">📷</div>
+                        <div>Add a photo</div>
+                      </div>
+                    )}
+                  </label>
+                </div>
+
+                <div className="spotDetail-right">
+                  <div className="spotDetail-name">{spotDraft.name}</div>
+
+                  <textarea
+                    className="spotDetail-note"
+                    value={spotNote}
+                    onChange={(e) => setSpotNote(e.target.value)}
+                    placeholder="How was your experience?"
+                  />
+
+                  <button className="spotDetail-save" type="button" onClick={saveSpotDetail}>
+                    Save changes
+                  </button>
                 </div>
               </div>
             </div>
