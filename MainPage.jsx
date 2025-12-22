@@ -236,7 +236,7 @@ const submitTripForm = (e) => {
     return;
   }
 }
-  // existing image logic continues below
+  // existing image logic below
 
     if (!finalImage) return setFormError("Please upload a cover photo.");
 
