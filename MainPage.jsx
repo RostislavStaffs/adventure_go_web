@@ -91,9 +91,9 @@ export default function MainPage() {
   const [coverPreview, setCoverPreview] = useState(""); // keeps existing image for edit
   const [formError, setFormError] = useState("");
 
-  
+  // =========================
   // Add Step modal state
-  
+  // =========================
   const [showAddStep, setShowAddStep] = useState(false);
   const [stepTrip, setStepTrip] = useState(null); // which trip we’re adding a step to
   const [stepDayISO, setStepDayISO] = useState(""); // yyyy-mm-dd
@@ -107,6 +107,17 @@ export default function MainPage() {
     { id: "spot2", name: "Picasso Museum" },
   ]);
   const [stepError, setStepError] = useState("");
+
+  // Add “Add a spot” modal state 
+  const [showAddSpot, setShowAddSpot] = useState(false);
+  const [spotQuery, setSpotQuery] = useState("");
+  const [spotResults] = useState([
+    { id: "s1", name: "Café de l’Acadèmia" },
+    { id: "s2", name: "Picasso Museum" },
+    { id: "s3", name: "Picasso Museum" },
+    { id: "s4", name: "Picasso Museum" },
+    { id: "s5", name: "Picasso Museum" },
+  ]);
 
   const authHeaders = () => {
     const t = localStorage.getItem("token");
@@ -166,7 +177,8 @@ export default function MainPage() {
         setShowTripForm(false);
         setShowViewTrip(false);
         setShowDeleteConfirm(false);
-        setShowAddStep(false); // 
+        setShowAddStep(false);
+        setShowAddSpot(false); 
       }
     };
     window.addEventListener("keydown", onKey);
@@ -335,9 +347,7 @@ export default function MainPage() {
     }
   };
 
-  
   // Open “Add a step” from a day button in View Trip modal
-  
   const openAddStep = (trip, dateObj) => {
     const iso = dateObj.toISOString().slice(0, 10); // yyyy-mm-dd
 
@@ -358,7 +368,6 @@ export default function MainPage() {
     setShowAddStep(true);
   };
 
-  
   // Submit “Add a step” form
   const submitStep = (e) => {
     e.preventDefault();
@@ -370,6 +379,27 @@ export default function MainPage() {
 
     setShowAddStep(false);
   };
+
+  // Open “Add a spot” modal from Add Step
+  const openAddSpot = () => {
+    setSpotQuery("");
+    setShowAddSpot(true);
+  };
+
+  // Demo select spot for UI preview only
+  const selectSpot = (spot) => {
+    // purely for UX demo: adds to list + closes modal
+    setStepSpots((prev) => {
+      const exists = prev.some((p) => p.name === spot.name);
+      if (exists) return prev;
+      return [...prev, { id: `spot_${crypto.randomUUID()}`, name: spot.name }];
+    });
+    setShowAddSpot(false);
+  };
+
+  const filteredSpots = spotResults.filter((s) =>
+    s.name.toLowerCase().includes(spotQuery.trim().toLowerCase())
+  );
 
   return (
     <div className="main-page">
@@ -713,7 +743,7 @@ export default function MainPage() {
                   key={d.toISOString()}
                   className="day-chip"
                   type="button"
-                  onClick={() => openAddStep(activeTrip, d)} 
+                  onClick={() => openAddStep(activeTrip, d)}
                 >
                   {d.toLocaleDateString(undefined, { day: "numeric" })}
                 </button>
@@ -723,7 +753,9 @@ export default function MainPage() {
         </div>
       )}
 
-      
+      {/* =========================
+          ADD A STEP MODAL
+         ========================= */}
       {showAddStep && stepTrip && (
         <div
           className="modal-overlay"
@@ -843,7 +875,7 @@ export default function MainPage() {
                       <button
                         type="button"
                         className="step-spotAdd"
-                        onClick={() => alert("Next: Add a spot modal (we’ll build this next)")}
+                        onClick={openAddSpot}  //opens "Add a spot" modal
                       >
                         <span className="step-spotAddIcon" aria-hidden="true">
                           📍
@@ -854,9 +886,63 @@ export default function MainPage() {
                   </div>
                 </section>
 
-                {/* hidden debug (optional) */}
                 <input type="hidden" value={stepDayISO} readOnly />
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      {showAddSpot && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={() => setShowAddSpot(false)}
+        >
+          <div className="modal-card modal-spot" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-topRow spotTopRow">
+              <button className="modal-back" type="button" onClick={() => setShowAddSpot(false)}>
+                ←
+              </button>
+
+              <div className="modal-title">Add a spot</div>
+
+              <div className="modal-spacer" />
+            </div>
+
+            <div className="spot-body">
+              <div className="spot-stage">
+                <div className="spot-picker">
+                  <div className="spot-heading">Pick a spot</div>
+
+                  <div className="spot-search">
+                    <span className="spot-searchIcon" aria-hidden="true">
+                      ▢
+                    </span>
+                    <input
+                      value={spotQuery}
+                      onChange={(e) => setSpotQuery(e.target.value)}
+                      placeholder="Search a spot"
+                    />
+                  </div>
+
+                  <div className="spot-list">
+                    {(filteredSpots.length ? filteredSpots : spotResults).map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className="spot-item"
+                        onClick={() => selectSpot(s)} // demo select
+                      >
+                        <span className="spot-thumb" aria-hidden="true" />
+                        <span className="spot-name">{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
