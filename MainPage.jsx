@@ -45,7 +45,6 @@ function fileToDataUrl(file) {
 }
 
 function toUiTrip(apiTrip) {
-  // API fields: destination, tripName, coverImage, _id etc.
   return {
     id: apiTrip._id,
     title: apiTrip.tripName || "",
@@ -63,7 +62,6 @@ export default function MainPage() {
   // auth state
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
 
-  // userId from token
   const token = localStorage.getItem("token");
   const jwtPayload = useMemo(() => (token ? decodeJwt(token) : null), [token]);
   const userId = jwtPayload?.userId || "guest";
@@ -93,6 +91,23 @@ export default function MainPage() {
   const [coverPreview, setCoverPreview] = useState(""); // keeps existing image for edit
   const [formError, setFormError] = useState("");
 
+  
+  // Add Step modal state
+  
+  const [showAddStep, setShowAddStep] = useState(false);
+  const [stepTrip, setStepTrip] = useState(null); // which trip we’re adding a step to
+  const [stepDayISO, setStepDayISO] = useState(""); // yyyy-mm-dd
+  const [stepName, setStepName] = useState("");
+  const [stepDate, setStepDate] = useState(""); // input date
+  const [stepOverview, setStepOverview] = useState("");
+  const [stepPhotos, setStepPhotos] = useState([]); // File[]
+  const [stepSpots, setStepSpots] = useState([
+    // placeholder demo
+    { id: "spot1", name: "Café de l’Acadèmia" },
+    { id: "spot2", name: "Picasso Museum" },
+  ]);
+  const [stepError, setStepError] = useState("");
+
   const authHeaders = () => {
     const t = localStorage.getItem("token");
     return t ? { Authorization: `Bearer ${t}` } : {};
@@ -120,13 +135,10 @@ export default function MainPage() {
 
       try {
         const res = await fetch(`${API_BASE}/api/trips`, {
-          headers: {
-            ...authHeaders(),
-          },
+          headers: { ...authHeaders() },
         });
 
         if (!res.ok) {
-          // token invalid/expired -> clear client state
           if (res.status === 401) {
             localStorage.removeItem("token");
             setIsLoggedIn(false);
@@ -154,6 +166,7 @@ export default function MainPage() {
         setShowTripForm(false);
         setShowViewTrip(false);
         setShowDeleteConfirm(false);
+        setShowAddStep(false); // 
       }
     };
     window.addEventListener("keydown", onKey);
@@ -173,13 +186,11 @@ export default function MainPage() {
     setEditingTripId(null);
   };
 
-  // OPEN: Add Trip
   const openAddTrip = () => {
     resetTripForm();
     setShowTripForm(true);
   };
 
-  // OPEN: Edit Trip (prefill form)
   const openEditTrip = (trip) => {
     setFormError("");
     setEditingTripId(trip.id);
@@ -190,7 +201,6 @@ export default function MainPage() {
     setTripName(trip.title || "");
     setSummary(trip.summary || "");
 
-    // keep existing image
     setCoverFile(null);
     setCoverPreview(trip.image || "");
 
@@ -209,6 +219,12 @@ export default function MainPage() {
       return setFormError("Departure date must be after arrival date.");
     if (!tripName.trim()) return setFormError("Please name your trip.");
 
+    //client-side protection from 413
+    if (coverFile && coverFile.size > 2 * 1024 * 1024) {
+      setFormError("Image too large (max 2MB). Please choose a smaller one.");
+      return;
+    }
+
     // For CREATE, require image. For EDIT, allow keeping old image.
     let finalImage = coverPreview;
 
@@ -219,24 +235,6 @@ export default function MainPage() {
     } catch {
       return setFormError("Could not read the image. Please try another file.");
     }
-const submitTripForm = (e) => {
-  e.preventDefault();
-  setFormError("");
-
-  if (!destination.trim()) return setFormError("Please select a destination.");
-  if (!arrivalDate) return setFormError("Please select an arrival date.");
-  if (!departureDate) return setFormError("Please select a departure date.");
-  if (departureDate < arrivalDate)
-    return setFormError("Departure date must be after arrival date.");
-  if (!tripName.trim()) return setFormError("Please name your trip.");
-
-  
-  if (coverFile && coverFile.size > 2 * 1024 * 1024) {
-    setFormError("Image too large (max 2MB). Please choose a smaller one.");
-    return;
-  }
-}
-  // existing image logic below
 
     if (!finalImage) return setFormError("Please upload a cover photo.");
 
@@ -254,7 +252,6 @@ const submitTripForm = (e) => {
       if (!t) return setFormError("You must be logged in.");
 
       if (!editingTripId) {
-        // CREATE
         const res = await fetch(`${API_BASE}/api/trips`, {
           method: "POST",
           headers: {
@@ -265,14 +262,10 @@ const submitTripForm = (e) => {
         });
 
         const data = await res.json().catch(() => null);
-
-        if (!res.ok) {
-          return setFormError(data?.message || "Failed to create trip.");
-        }
+        if (!res.ok) return setFormError(data?.message || "Failed to create trip.");
 
         setTrips((prev) => [toUiTrip(data), ...prev]);
       } else {
-        // UPDATE
         const res = await fetch(`${API_BASE}/api/trips/${editingTripId}`, {
           method: "PUT",
           headers: {
@@ -283,18 +276,12 @@ const submitTripForm = (e) => {
         });
 
         const data = await res.json().catch(() => null);
-
-        if (!res.ok) {
-          return setFormError(data?.message || "Failed to update trip.");
-        }
+        if (!res.ok) return setFormError(data?.message || "Failed to update trip.");
 
         const updatedUiTrip = toUiTrip(data);
 
-        setTrips((prev) =>
-          prev.map((t) => (t.id === editingTripId ? updatedUiTrip : t))
-        );
+        setTrips((prev) => prev.map((t) => (t.id === editingTripId ? updatedUiTrip : t)));
 
-        // keep View modal in sync
         if (activeTrip?.id === editingTripId) {
           setActiveTrip(updatedUiTrip);
         }
@@ -308,13 +295,11 @@ const submitTripForm = (e) => {
     }
   };
 
-  // OPEN: View Trip
   const openViewTrip = (trip) => {
     setActiveTrip(trip);
     setShowViewTrip(true);
   };
 
-  // DELETE flow
   const askDeleteTrip = (trip) => {
     setTripToDelete(trip);
     setShowDeleteConfirm(true);
@@ -326,13 +311,10 @@ const submitTripForm = (e) => {
     try {
       const res = await fetch(`${API_BASE}/api/trips/${tripToDelete.id}`, {
         method: "DELETE",
-        headers: {
-          ...authHeaders(),
-        },
+        headers: { ...authHeaders() },
       });
 
       const data = await res.json().catch(() => null);
-
       if (!res.ok) {
         setFormError(data?.message || "Failed to delete trip.");
         return;
@@ -340,7 +322,6 @@ const submitTripForm = (e) => {
 
       setTrips((prev) => prev.filter((t) => t.id !== tripToDelete.id));
 
-      // close view modal if it was open for this trip
       if (activeTrip?.id === tripToDelete.id) {
         setShowViewTrip(false);
         setActiveTrip(null);
@@ -354,6 +335,41 @@ const submitTripForm = (e) => {
     }
   };
 
+  
+  // Open “Add a step” from a day button in View Trip modal
+  
+  const openAddStep = (trip, dateObj) => {
+    const iso = dateObj.toISOString().slice(0, 10); // yyyy-mm-dd
+
+    setStepTrip(trip);
+    setStepDayISO(iso);
+    setStepName("");
+    setStepDate(iso);
+    setStepOverview("");
+    setStepPhotos([]);
+    setStepError("");
+
+    // reset placeholder demo spots
+    setStepSpots([
+      { id: "spot1", name: "Café de l’Acadèmia" },
+      { id: "spot2", name: "Picasso Museum" },
+    ]);
+
+    setShowAddStep(true);
+  };
+
+  
+  // Submit “Add a step” form
+  const submitStep = (e) => {
+    e.preventDefault();
+    setStepError("");
+
+    if (!stepName.trim()) return setStepError("Please name this step.");
+    if (!stepDate) return setStepError("Please choose a date.");
+    if (!stepOverview.trim()) return setStepError("Please write an overview of the day.");
+
+    setShowAddStep(false);
+  };
 
   return (
     <div className="main-page">
@@ -519,7 +535,6 @@ const submitTripForm = (e) => {
                   style={{ display: "none" }}
                 />
 
-                {/* show preview if we have one */}
                 {coverPreview ? (
                   <img className="cover-preview" src={coverPreview} alt="" />
                 ) : (
@@ -657,7 +672,6 @@ const submitTripForm = (e) => {
 
               <div className="modal-title">{activeTrip.title}</div>
 
-              {/* right actions (Delete / Edit) */}
               <div className="viewTrip-actionsTop">
                 <button
                   type="button"
@@ -695,10 +709,154 @@ const submitTripForm = (e) => {
 
             <div className="viewTrip-days">
               {daysBetweenInclusive(activeTrip.arrivalDate, activeTrip.departureDate).map((d) => (
-                <button key={d.toISOString()} className="day-chip" type="button">
+                <button
+                  key={d.toISOString()}
+                  className="day-chip"
+                  type="button"
+                  onClick={() => openAddStep(activeTrip, d)} 
+                >
                   {d.toLocaleDateString(undefined, { day: "numeric" })}
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      {showAddStep && stepTrip && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={() => setShowAddStep(false)}
+        >
+          <div className="modal-card modal-step" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-topRow stepTopRow">
+              <button className="modal-back" type="button" onClick={() => setShowAddStep(false)}>
+                ←
+              </button>
+
+              <div className="modal-title">Add a step</div>
+
+              <div className="stepTopActions">
+                <button className="stepPrimaryBtn" type="submit" form="addStepForm">
+                  Add step
+                </button>
+              </div>
+            </div>
+
+            <div className="step-body">
+              <form id="addStepForm" onSubmit={submitStep}>
+                {stepError && <div className="modal-error">{stepError}</div>}
+
+                {/* TOP CARD */}
+                <section className="step-card">
+                  <div className="step-topGrid">
+                    <div className="step-map">
+                      <div className="step-mapInner">
+                        <div className="step-mapHint">Map coming soon</div>
+                        <div className="step-mapSub">
+                          (We’ll connect Geo APIs later — for now this is a placeholder)
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="step-divider" />
+
+                    <div className="step-right">
+                      <div className="step-group">
+                        <div className="step-h">Name this step</div>
+                        <div className="step-pill">
+                          <span className="step-icon" aria-hidden="true">
+                            🏷️
+                          </span>
+                          <input
+                            value={stepName}
+                            onChange={(e) => setStepName(e.target.value)}
+                            placeholder='E.g. "A day in El Born"'
+                          />
+                        </div>
+                      </div>
+
+                      <div className="step-group">
+                        <div className="step-h">Date</div>
+                        <div className="step-pill step-pillShort">
+                          <span className="step-icon" aria-hidden="true">
+                            📅
+                          </span>
+                          <input
+                            type="date"
+                            value={stepDate}
+                            onChange={(e) => setStepDate(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="step-photoRow">
+                        <label className="step-photoBox">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              setStepPhotos(files);
+                            }}
+                            style={{ display: "none" }}
+                          />
+                          <span className="step-photoIcon" aria-hidden="true">
+                            📷
+                          </span>
+                        </label>
+                        <div className="step-photoText">Add photos</div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* BOTTOM CARD */}
+                <section className="step-card step-bottomGrid">
+                  <div className="step-bottomLeft">
+                    <div className="step-bottomTitle">Overview of the day</div>
+                    <textarea
+                      className="step-textarea"
+                      value={stepOverview}
+                      onChange={(e) => setStepOverview(e.target.value)}
+                      placeholder="Write a bit about your day"
+                    />
+                  </div>
+
+                  <div className="step-divider" />
+
+                  <div className="step-bottomRight">
+                    <div className="step-bottomTitle">Spots you have visited</div>
+
+                    <div className="step-spots">
+                      {stepSpots.map((s) => (
+                        <div key={s.id} className="step-spotPill">
+                          <span className="step-spotThumb" aria-hidden="true" />
+                          <span className="step-spotName">{s.name}</span>
+                        </div>
+                      ))}
+
+                      <button
+                        type="button"
+                        className="step-spotAdd"
+                        onClick={() => alert("Next: Add a spot modal (we’ll build this next)")}
+                      >
+                        <span className="step-spotAddIcon" aria-hidden="true">
+                          📍
+                        </span>
+                        Add another spot
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                {/* hidden debug (optional) */}
+                <input type="hidden" value={stepDayISO} readOnly />
+              </form>
             </div>
           </div>
         </div>
@@ -721,11 +879,7 @@ const submitTripForm = (e) => {
               <button className="confirm-yes" type="button" onClick={confirmDeleteTrip}>
                 Yes
               </button>
-              <button
-                className="confirm-no"
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
+              <button className="confirm-no" type="button" onClick={() => setShowDeleteConfirm(false)}>
                 No
               </button>
             </div>
