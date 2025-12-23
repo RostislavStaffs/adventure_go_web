@@ -157,6 +157,9 @@ export default function MainPage() {
   const [stepSpots, setStepSpots] = useState([]); // spots are empty unless user adds them
   const [stepError, setStepError] = useState("");
 
+  // track when the step modal is editing an existing step
+  const [editingStepId, setEditingStepId] = useState(null); // step._id (if your backend provides it)
+
   // =========================
   // Add “Add a spot” modal state + Photon search
   // =========================
@@ -244,6 +247,8 @@ export default function MainPage() {
         setSpotPhotoFile(null);
         setSpotPhotoPreview("");
         setEditingSpotId(null);
+
+        setEditingStepId(null);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -418,14 +423,17 @@ export default function MainPage() {
     setStepError("");
 
     if (existingStep) {
+      setEditingStepId(existingStep._id || existingStep.id || null);
+
       setStepName(existingStep.title || "");
       setStepDate(normalizeYYYYMMDD(existingStep.date) || iso);
       setStepOverview(existingStep.overview || "");
-      // load existing spots and photos
       setStepSpots(Array.isArray(existingStep.spots) ? existingStep.spots : []);
       setStepExistingPhotos(Array.isArray(existingStep.photos) ? existingStep.photos : []);
       setStepPhotos([]);
     } else {
+      setEditingStepId(null);
+
       setStepName("");
       setStepDate(iso);
       setStepOverview("");
@@ -460,6 +468,13 @@ export default function MainPage() {
     openAddStep(viewStepTrip, new Date(normalizeYYYYMMDD(viewStep.date) + "T00:00:00"), viewStep);
   };
 
+  const closeStepModal = () => {
+    setShowAddStep(false);
+    setStepTrip(null);
+    setStepError("");
+    setEditingStepId(null);
+  };
+
   const submitStep = async (e) => {
     e.preventDefault();
     setStepError("");
@@ -491,6 +506,8 @@ export default function MainPage() {
           ...authHeaders(),
         },
         body: JSON.stringify({
+          // If your backend supports upsert by date, this is enough.
+          // If it supports step id updates, you can also include: stepId: editingStepId
           date: stepDate,
           title: stepName.trim(),
           overview: stepOverview.trim(),
@@ -508,10 +525,79 @@ export default function MainPage() {
       setTrips((prev) => prev.map((t) => (t.id === updatedUiTrip.id ? updatedUiTrip : t)));
       setActiveTrip(updatedUiTrip);
 
-      setShowAddStep(false);
+      closeStepModal();
     } catch (err) {
       console.error(err);
       setStepError(err.message || "Failed to save step");
+    }
+  };
+
+  // remove step 
+  const removeStep = async () => {
+    setStepError("");
+
+    if (!activeTrip?.id) return setStepError("No active trip selected.");
+    if (!editingStepId && !stepDate) return setStepError("Missing step identifier/date.");
+
+    const ok = window.confirm("Remove this step? This cannot be undone.");
+    if (!ok) return;
+
+    try {
+      // Try a few common delete patterns 
+      const candidates = [];
+      // date-based deletion
+      candidates.push(`${API_BASE}/api/trips/${activeTrip.id}/steps?date=${encodeURIComponent(stepDate)}`);
+      
+
+      let lastRes = null;
+      let successData = null;
+
+      for (const url of candidates) {
+        const res = await fetch(url, { method: "DELETE", headers: { ...authHeaders() } });
+        lastRes = res;
+
+        if (res.ok) {
+          // may return updated trip, or may be 204
+          const data = await res.json().catch(() => null);
+          successData = data;
+          break;
+        }
+
+        // if it's not found, try next candidate
+        if (res.status === 404) continue;
+
+        // any other failure -> stop and show error message
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.message || "Failed to delete step");
+      }
+
+      if (!lastRes?.ok) {
+        // All candidates failed (likely backend route not implemented)
+        throw new Error("Failed to delete step (no matching DELETE route found).");
+      }
+
+      // If backend returned an updated trip
+      if (successData?.trip || successData?._id) {
+        const updatedApiTrip = successData.trip ?? successData;
+        const updatedUiTrip = toUiTrip(updatedApiTrip);
+
+        setTrips((prev) => prev.map((t) => (t.id === updatedUiTrip.id ? updatedUiTrip : t)));
+        setActiveTrip(updatedUiTrip);
+      } else {
+        // If backend returned no body (204), update UI locally by date
+        const updatedLocal = {
+          ...activeTrip,
+          steps: (activeTrip.steps || []).filter((s) => normalizeYYYYMMDD(s.date) !== normalizeYYYYMMDD(stepDate)),
+        };
+
+        setTrips((prev) => prev.map((t) => (t.id === updatedLocal.id ? updatedLocal : t)));
+        setActiveTrip(updatedLocal);
+      }
+
+      closeStepModal();
+    } catch (err) {
+      console.error(err);
+      setStepError(err?.message || "Failed to delete step");
     }
   };
 
@@ -636,7 +722,19 @@ export default function MainPage() {
     closeSpotDetail();
   };
 
+  // remove spot 
+  const removeSpot = () => {
+    if (!editingSpotId) return;
+    const ok = window.confirm("Remove this spot?");
+    if (!ok) return;
+
+    setStepSpots((prev) => prev.filter((s) => s.id !== editingSpotId));
+    closeSpotDetail();
+  };
+
   const makeHighlightQuote = (spotName) => `“${spotName} was one of the best moments of the day.”`;
+
+  const isEditingStep = !!editingStepId;
 
   return (
     <div className="main-page">
@@ -924,7 +1022,8 @@ export default function MainPage() {
 
             <div className="viewTrip-meta">
               <div className="viewTrip-sub">
-                {activeTrip.location} • {formatDateLabel(activeTrip.arrivalDate)} – {formatDateLabel(activeTrip.departureDate)}
+                {activeTrip.location} • {formatDateLabel(activeTrip.arrivalDate)} –{" "}
+                {formatDateLabel(activeTrip.departureDate)}
               </div>
               {activeTrip.summary && <div className="viewTrip-summary">{activeTrip.summary}</div>}
             </div>
@@ -943,9 +1042,7 @@ export default function MainPage() {
                     type="button"
                     onClick={() => openViewStepModal(activeTrip, step)}
                   >
-                    <div className="timeline-stepThumb">
-                      {step.photos?.[0] ? <img src={step.photos[0]} alt="" /> : null}
-                    </div>
+                    <div className="timeline-stepThumb">{step.photos?.[0] ? <img src={step.photos[0]} alt="" /> : null}</div>
                     <div className="timeline-stepMeta">
                       <div className="timeline-stepTitle">{step.title}</div>
                       <div className="timeline-stepSub">{activeTrip.location}</div>
@@ -1030,7 +1127,9 @@ export default function MainPage() {
                 <div className="viewStep-overviewCard">
                   <div className="viewStep-overviewHeader">
                     <div className="viewStep-overviewTitle">Overview of the day</div>
-                    <div className="viewStep-overviewDate">{formatDateLabelPretty(normalizeYYYYMMDD(viewStep.date))}</div>
+                    <div className="viewStep-overviewDate">
+                      {formatDateLabelPretty(normalizeYYYYMMDD(viewStep.date))}
+                    </div>
                   </div>
 
                   <div className="viewStep-overviewText">{viewStep.overview || "No overview written yet."}</div>
@@ -1063,21 +1162,34 @@ export default function MainPage() {
         </div>
       )}
 
-      {/* step modals */}
+      {/* =========================
+          ADD / EDIT STEP MODAL
+         ========================= */}
       {showAddStep && stepTrip && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={() => setShowAddStep(false)}>
+        <div className="modal-overlay" role="dialog" aria-modal="true" onMouseDown={closeStepModal}>
           <div className="modal-card modal-step" onMouseDown={(e) => e.stopPropagation()}>
             <div className="modal-topRow stepTopRow">
-              <button className="modal-back" type="button" onClick={() => setShowAddStep(false)}>
+              <button className="modal-back" type="button" onClick={closeStepModal}>
                 ←
               </button>
 
               <div className="modal-title">Add a step</div>
 
               <div className="stepTopActions">
-                <button className="stepPrimaryBtn" type="submit" form="addStepForm">
-                  Add step
-                </button>
+                {isEditingStep ? (
+                  <>
+                    <button className="stepDangerBtn" type="button" onClick={removeStep}>
+                      Remove step
+                    </button>
+                    <button className="stepGhostBtn" type="submit" form="addStepForm">
+                      Confirm changes
+                    </button>
+                  </>
+                ) : (
+                  <button className="stepPrimaryBtn" type="submit" form="addStepForm">
+                    Add step
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1085,10 +1197,8 @@ export default function MainPage() {
               <form id="addStepForm" onSubmit={submitStep}>
                 {stepError && <div className="modal-error">{stepError}</div>}
 
-                {/* TOP CARD (LEFT = fields, RIGHT = spots) */}
                 <section className="step-card">
                   <div className="step-topGrid">
-                    {/* LEFT */}
                     <div className="step-left">
                       <div className="step-group">
                         <div className="step-h">Name this step</div>
@@ -1144,7 +1254,6 @@ export default function MainPage() {
 
                     <div className="step-divider" />
 
-                    {/* RIGHT */}
                     <div className="step-right step-rightSpots">
                       <div className="step-h step-hSmall">Spots you have visited</div>
 
@@ -1172,7 +1281,6 @@ export default function MainPage() {
                   </div>
                 </section>
 
-                {/* OVERVIEW CARD (full width) */}
                 <section className="step-card step-overviewCard">
                   <div className="step-overviewInner">
                     <div className="step-bottomTitle">Overview of the day</div>
@@ -1312,9 +1420,17 @@ export default function MainPage() {
                     placeholder="How was your experience?"
                   />
 
-                  <button className="spotDetail-save" type="button" onClick={saveSpotDetail}>
-                    Save changes
-                  </button>
+                  <div className="spotDetail-actions">
+                    {editingSpotId ? (
+                      <button className="spotDetail-remove" type="button" onClick={removeSpot}>
+                        Remove spot
+                      </button>
+                    ) : null}
+
+                    <button className="spotDetail-save" type="button" onClick={saveSpotDetail}>
+                      Save changes
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -87,6 +87,12 @@ router.delete("/:id", auth, async (req, res) => {
 */
 // Add Step to a Trip 
 router.post("/:id/steps", auth, async (req, res) => {
+  /*
+ DELETE /api/trips/:id/steps?date=YYYY-MM-DD
+ Delete a step for a specific day
+*/
+
+
   try {
     const { id } = req.params;
     const { date, title, overview, photos = [], spots = [] } = req.body;
@@ -114,6 +120,35 @@ router.post("/:id/steps", auth, async (req, res) => {
   } catch (err) {
     console.error("POST /trips/:id/steps error:", err);
     res.status(500).json({ message: "Failed to create step" });
+  }
+});
+router.delete("/:id/steps", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ message: "Missing date" });
+    }
+
+    const trip = await Trip.findOne({ _id: id, userId: req.user.userId });
+    if (!trip) return res.status(404).json({ message: "Trip not found" });
+
+    const before = trip.steps.length;
+
+    trip.steps = trip.steps.filter(
+      (s) => String(s.date).slice(0, 10) !== String(date).slice(0, 10)
+    );
+
+    if (trip.steps.length === before) {
+      return res.status(404).json({ message: "Step not found" });
+    }
+
+    await trip.save();
+    res.json(trip);
+  } catch (err) {
+    console.error("DELETE /trips/:id/steps error:", err);
+    res.status(500).json({ message: "Failed to delete step" });
   }
 });
 

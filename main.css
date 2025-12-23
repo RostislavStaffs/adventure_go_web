@@ -1233,7 +1233,57 @@
   margin-bottom: 14px;
 }
 
-.spotDetail-save {
+@media (max-width: 780px) {
+  .spotDetail-card {
+    grid-template-columns: 1fr;
+  }
+  .spotDetail-photo {
+    width: 100%;
+  }
+}
+/* =========================
+   STEP TOP ACTIONS (EDIT MODE)
+   ========================= */
+.stepTopActions{
+  display:flex;
+  justify-content:flex-end;
+  gap: 10px; /* NEW (so buttons don't stick) */
+  align-items:center;
+}
+
+.stepDangerBtn{
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: none;
+  background: #111;
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.stepGhostBtn{
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.55);
+  background: #fff;
+  color: #111;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* =========================
+   SPOT DETAIL ACTIONS
+   ========================= */
+.spotDetail-actions{
+  display:flex;
+  gap: 12px;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+.spotDetail-remove{
   height: 44px;
   border-radius: 999px;
   border: none;
@@ -1244,11 +1294,14 @@
   padding: 0 22px;
 }
 
-@media (max-width: 780px) {
-  .spotDetail-card {
-    grid-template-columns: 1fr;
-  }
-  .spotDetail-photo {
-    width: 100%;
-  }
+/* change Save changes to outline */
+.spotDetail-save{
+  height: 44px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.55);
+  background: #fff;
+  color: #111;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 0 22px;
 }
