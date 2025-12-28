@@ -7,7 +7,7 @@ const adminRoutes = require("./routes/admin");
 const authRoutes = require("./routes/auth");
 const tripsRoutes = require("./routes/trips");
 const User = require("./models/User");
-
+const queriesRoutes = require("./routes/queries");
 const app = express();
 
 // middleware
@@ -17,6 +17,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/trips", tripsRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/queries", queriesRoutes);
 
 // Admin bootstrap (runs every start, creates only if missing)
 async function ensureAdminUser() {

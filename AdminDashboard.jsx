@@ -180,9 +180,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="adminPanel-tableBody">
-                {loading && (
-                  <div className="adminPanel-empty">Loading...</div>
-                )}
+                {loading && <div className="adminPanel-empty">Loading...</div>}
 
                 {!loading && error && (
                   <div className="adminPanel-empty">{error}</div>
@@ -194,19 +192,21 @@ export default function AdminDashboard() {
 
                 {!loading &&
                   !error &&
-                  items.map((q, idx) => {
-                    const queryNumber = (page - 1) * limit + (idx + 1);
+                  items.map((q) => {
                     return (
                       <div className="adminPanel-row" key={q._id}>
                         <div className="adminPanel-td adminPanel-tdId">
-                          {queryNumber}
+                          {q.queryNumber}
                         </div>
+
                         <div className="adminPanel-td adminPanel-tdEmail">
                           {q.email}
                         </div>
+
                         <div className="adminPanel-td adminPanel-tdDate">
                           {formatDate(q.createdAt)}
                         </div>
+
                         <div className="adminPanel-td adminPanel-tdActions">
                           <button
                             className="adminPanel-actionBtn"
@@ -341,7 +341,9 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            {modalLoading && <div className="adminPanel-modalBody">Loading...</div>}
+            {modalLoading && (
+              <div className="adminPanel-modalBody">Loading...</div>
+            )}
 
             {!modalLoading && modalError && (
               <div className="adminPanel-modalBody">{modalError}</div>
@@ -350,21 +352,42 @@ export default function AdminDashboard() {
             {!modalLoading && !modalError && openQuery && (
               <div className="adminPanel-modalBody">
                 <div className="adminPanel-modalRow">
+                  <div className="adminPanel-modalLabel">Query id</div>
+                  <div className="adminPanel-modalValue">
+                    {openQuery.queryNumber}
+                  </div>
+                </div>
+
+                <div className="adminPanel-modalRow">
+                  <div className="adminPanel-modalLabel">First name</div>
+                  <div className="adminPanel-modalValue">
+                    {openQuery.firstName || "-"}
+                  </div>
+                </div>
+
+                <div className="adminPanel-modalRow">
+                  <div className="adminPanel-modalLabel">Last name</div>
+                  <div className="adminPanel-modalValue">
+                    {openQuery.lastName || "-"}
+                  </div>
+                </div>
+
+                <div className="adminPanel-modalRow">
                   <div className="adminPanel-modalLabel">Email</div>
                   <div className="adminPanel-modalValue">{openQuery.email}</div>
+                </div>
+
+                <div className="adminPanel-modalRow">
+                  <div className="adminPanel-modalLabel">Phone</div>
+                  <div className="adminPanel-modalValue">
+                    {openQuery.phone || "-"}
+                  </div>
                 </div>
 
                 <div className="adminPanel-modalRow">
                   <div className="adminPanel-modalLabel">Date</div>
                   <div className="adminPanel-modalValue">
                     {formatDate(openQuery.createdAt)}
-                  </div>
-                </div>
-
-                <div className="adminPanel-modalRow">
-                  <div className="adminPanel-modalLabel">Subject</div>
-                  <div className="adminPanel-modalValue">
-                    {openQuery.subject || "-"}
                   </div>
                 </div>
 

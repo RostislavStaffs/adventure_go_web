@@ -27,14 +27,7 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-/*
-  GET /api/admin/queries?page=1&limit=6
-  Returns:
-  {
-    items: [{ _id, email, createdAt, subject, message }],
-    page, pages, total
-  }
-*/
+// GET /api/admin/queries?page=1&limit=6
 router.get("/queries", requireAdmin, async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
@@ -47,7 +40,7 @@ router.get("/queries", requireAdmin, async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .select("email createdAt subject message")
+        .select("queryNumber email createdAt")
         .lean(),
     ]);
 
@@ -65,9 +58,7 @@ router.get("/queries", requireAdmin, async (req, res) => {
   }
 });
 
-/*
-  GET /api/admin/queries/:id
-*/
+// GET /api/admin/queries/:id
 router.get("/queries/:id", requireAdmin, async (req, res) => {
   try {
     const q = await Query.findById(req.params.id).lean();
@@ -79,37 +70,12 @@ router.get("/queries/:id", requireAdmin, async (req, res) => {
   }
 });
 
-/*
-  DELETE /api/admin/queries/:id
-*/
+// DELETE /api/admin/queries/:id
 router.delete("/queries/:id", requireAdmin, async (req, res) => {
   try {
     const deleted = await Query.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Query not found" });
     return res.json({ message: "Deleted" });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server error" });
-  }
-});
-
-/*
-  Temporary helper route so you can add test queries until the contact page is wired.
-  POST /api/admin/queries/seed
-  Body: { email, subject, message }
-*/
-router.post("/queries/seed", requireAdmin, async (req, res) => {
-  try {
-    const { email, subject, message } = req.body;
-    if (!email) return res.status(400).json({ message: "Email required" });
-
-    const q = await Query.create({
-      email,
-      subject: subject || "",
-      message: message || "",
-    });
-
-    return res.status(201).json({ message: "Created", queryId: q._id });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });

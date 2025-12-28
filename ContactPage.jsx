@@ -1,11 +1,78 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import "./contact.css";
 import planeImg from "./images/plane.jpg";
 import { Link } from "react-router-dom";
 
+const API_BASE = "http://localhost:4000";
+
 export default function ContactPage() {
-  // ✅ CHANGE: detect login from localStorage token (same logic as Main/About)
-  const isLoggedIn = Boolean(localStorage.getItem("token"));
+  const isLoggedIn = useMemo(() => Boolean(localStorage.getItem("token")), []);
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const maxLen = 250;
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (!message.trim()) {
+      setError("Message is required");
+      return;
+    }
+    if (message.length > maxLen) {
+      setError("Message must be 250 characters or less");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/queries`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          phone,
+          message,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Failed to submit form");
+        setSubmitting(false);
+        return;
+      }
+
+      setSuccess(`Submitted. Your query id is ${data.query?.queryNumber}.`);
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setPhone("");
+      setMessage("");
+      setSubmitting(false);
+    } catch (err) {
+      setError("Server not reachable");
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="contact-page">
@@ -16,11 +83,10 @@ export default function ContactPage() {
               Adventure <span>GO</span>
             </div>
 
-            {/* ✅ CHANGE: if logged in show Account, else show Back (keeps old design layout) */}
             {isLoggedIn ? (
               <Link to="/main" className="contact-back">
                 <span className="login-back-icon">←</span>
-              Back
+                Back
               </Link>
             ) : (
               <Link to="/" className="contact-back">
@@ -48,7 +114,19 @@ export default function ContactPage() {
             <div className="contact-formCard">
               <h1>Get in touch</h1>
 
-              <form className="contact-form">
+              {error && (
+                <p style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: "crimson" }}>
+                  {error}
+                </p>
+              )}
+
+              {success && (
+                <p style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: "green" }}>
+                  {success}
+                </p>
+              )}
+
+              <form className="contact-form" onSubmit={handleSubmit}>
                 <div className="contact-row">
                   <div>
                     <label className="contact-label">First name</label>
@@ -64,7 +142,11 @@ export default function ContactPage() {
                           />
                         </svg>
                       </span>
-                      <input placeholder="First name" />
+                      <input
+                        placeholder="First name"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                      />
                     </div>
                   </div>
 
@@ -82,7 +164,11 @@ export default function ContactPage() {
                           />
                         </svg>
                       </span>
-                      <input placeholder="Last name" />
+                      <input
+                        placeholder="Last name"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
@@ -107,25 +193,37 @@ export default function ContactPage() {
                       />
                     </svg>
                   </span>
-                  <input placeholder="Email address" />
+                  <input
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
 
-                {/* ✅ RESTORED: phone number field */}
                 <label className="contact-label">Phone number</label>
                 <div className="contact-inputWrap">
-                  <input placeholder="+44" />
+                  <input
+                    placeholder="+44"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
                 </div>
 
-                {/* ✅ RESTORED: message + counter */}
                 <label className="contact-label">Message</label>
                 <div className="contact-textareaWrap">
-                  <textarea placeholder="Enter your query here..." />
-                  <span className="contact-counter">250/250</span>
+                  <textarea
+                    placeholder="Enter your query here..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value.slice(0, maxLen))}
+                    maxLength={maxLen}
+                  />
+                  <span className="contact-counter">
+                    {message.length}/{maxLen}
+                  </span>
                 </div>
 
-                {/* ✅ RESTORED: original button label */}
-                <button className="contact-submit" type="button">
-                  Submit form
+                <button className="contact-submit" type="submit" disabled={submitting}>
+                  {submitting ? "Submitting..." : "Submit form"}
                 </button>
               </form>
             </div>
