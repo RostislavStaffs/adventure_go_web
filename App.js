@@ -6,6 +6,8 @@ import ContactPage from "./ContactPage";
 import AboutPage from "./AboutPage";
 import MainPage from "./MainPage";
 import AccountPage from "./AccountPage";
+import AdminLoginPage from "./AdminLoginPage";
+import AdminDashboard from "./AdminDashboard";
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/main" element={<MainPage />} />
       <Route path="/account" element={<AccountPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
     </Routes>
   );
 }

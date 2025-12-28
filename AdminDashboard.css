@@ -1,0 +1,318 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.adminPanel-page {
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #121212;
+}
+
+.adminPanel-topbar {
+  width: 100%;
+  padding: 28px 46px 6px;
+}
+
+.adminPanel-topbarInner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.adminPanel-brand {
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: 0.2px;
+}
+
+.adminPanel-brand span {
+  color: #d2a679;
+  font-weight: 900;
+}
+
+.adminPanel-title {
+  justify-self: center;
+  font-weight: 800;
+  font-size: 30px;
+  color: rgba(0,0,0,0.70);
+}
+
+.adminPanel-links {
+  justify-self: end;
+  display: flex;
+  gap: 46px;
+  align-items: center;
+  font-size: 20px;
+}
+
+.adminPanel-link {
+  color: rgba(0,0,0,0.75);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.adminPanel-link:hover {
+  color: rgba(0,0,0,0.95);
+}
+
+.adminPanel-main {
+  width: 100%;
+  padding: 14px 46px 40px;
+}
+
+.adminPanel-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.adminPanel-card {
+  border: 1.5px solid rgba(0,0,0,0.55);
+  border-radius: 26px;
+  padding: 22px 22px 18px;
+}
+
+.adminPanel-cardTitle {
+  text-align: center;
+  font-size: 40px;
+  font-weight: 900;
+  margin: 8px 0 14px;
+}
+
+.adminPanel-tableWrap {
+  width: 100%;
+  padding: 10px 18px 10px;
+}
+
+.adminPanel-tableHeader {
+  display: grid;
+  grid-template-columns: 0.85fr 1.6fr 1fr 1fr;
+  align-items: center;
+  background: #0b0b0b;
+  color: #fff;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.adminPanel-th {
+  text-align: center;
+}
+
+.adminPanel-thCenter {
+  text-align: center;
+}
+
+.adminPanel-tableBody {
+  position: relative;
+  min-height: 430px;
+  padding: 6px 0 0;
+}
+
+.adminPanel-empty {
+  width: 100%;
+  padding: 40px 0;
+  text-align: center;
+  color: rgba(0,0,0,0.55);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.adminPanel-row {
+  display: grid;
+  grid-template-columns: 0.85fr 1.6fr 1fr 1fr;
+  align-items: center;
+  min-height: 74px;
+}
+
+.adminPanel-td {
+  text-align: center;
+  padding: 18px 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(0,0,0,0.88);
+}
+
+.adminPanel-tdEmail {
+  font-weight: 900;
+}
+
+.adminPanel-tdDate {
+  font-weight: 700;
+  color: rgba(0,0,0,0.8);
+}
+
+.adminPanel-row .adminPanel-tdEmail,
+.adminPanel-row .adminPanel-tdDate {
+  border-left: 1.5px solid rgba(0,0,0,0.35);
+}
+
+.adminPanel-row .adminPanel-tdActions {
+  border-left: 1.5px solid rgba(0,0,0,0.35);
+}
+
+.adminPanel-tdActions {
+  display: flex;
+  justify-content: center;
+  gap: 26px;
+}
+
+.adminPanel-actionBtn {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  border: none;
+  background: #0b0b0b;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.adminPanel-actionBtn:hover {
+  filter: brightness(1.08);
+}
+
+.adminPanel-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 0 6px;
+}
+
+.adminPanel-pageBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: none;
+  background: #0b0b0b;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adminPanel-pageBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.adminPanel-arrow {
+  font-size: 26px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.adminPanel-pageDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.35);
+}
+
+.adminPanel-modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  z-index: 9999;
+}
+
+.adminPanel-modal {
+  width: min(720px, 96vw);
+  background: #f2f2f2;
+  border-radius: 18px;
+  border: 1.5px solid rgba(0,0,0,0.18);
+  overflow: hidden;
+}
+
+.adminPanel-modalTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1.5px solid rgba(0,0,0,0.12);
+}
+
+.adminPanel-modalTitle {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.adminPanel-modalClose {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: none;
+  background: #0b0b0b;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.adminPanel-modalBody {
+  padding: 18px;
+  font-size: 14px;
+  color: rgba(0,0,0,0.85);
+}
+
+.adminPanel-modalRow {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.adminPanel-modalLabel {
+  font-weight: 900;
+  color: rgba(0,0,0,0.75);
+}
+
+.adminPanel-modalValue {
+  font-weight: 700;
+  color: rgba(0,0,0,0.9);
+}
+
+.adminPanel-modalRowMessage {
+  align-items: start;
+}
+
+.adminPanel-modalMessageBox {
+  background: #ffffff;
+  border: 1.5px solid rgba(0,0,0,0.18);
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 120px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 950px) {
+  .adminPanel-topbar {
+    padding: 22px 18px 6px;
+  }
+  .adminPanel-main {
+    padding: 12px 18px 40px;
+  }
+  .adminPanel-links {
+    gap: 22px;
+    font-size: 16px;
+  }
+  .adminPanel-cardTitle {
+    font-size: 30px;
+  }
+  .adminPanel-tableHeader {
+    font-size: 16px;
+  }
+  .adminPanel-td {
+    font-size: 14px;
+  }
+  .adminPanel-actionBtn {
+    width: 44px;
+    height: 44px;
+  }
+}

@@ -96,6 +96,9 @@ export default function LandingPage() {
     <div className="footer-col">
       <h4>Support</h4>
       <Link to="/contact">Contact us</Link>
+      <Link to="/admin/login" className="footer-admin">
+    Sign in as Admin
+  </Link>
     </div>
 
     <div className="footer-subscribe">

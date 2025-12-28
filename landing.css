@@ -269,6 +269,18 @@ body {
   font-weight: 800;
   margin-bottom: 18px;
 }
+.footer-admin {
+  display: inline-block;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+  margin-top: 10px;
+}
+
+.footer-admin:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 
 .footer-col a {
   display: inline-block;
