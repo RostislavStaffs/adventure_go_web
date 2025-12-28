@@ -9,7 +9,8 @@ import AccountPage from "./AccountPage";
 import AdminLoginPage from "./AdminLoginPage";
 import AdminDashboard from "./AdminDashboard";
 import UserListPage from "./UserListPage";
-
+import ResetPasswordPage from "./ResetPasswordPage";
+import AdminAccountPage from "./AdminAccountPage";
 function App() {
   return (
     <Routes>
@@ -23,6 +24,8 @@ function App() {
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/users" element={<UserListPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/admin/account" element={<AdminAccountPage />} />
     </Routes>
   );
 }

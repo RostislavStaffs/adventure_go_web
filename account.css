@@ -252,3 +252,18 @@
   .account-card h1 { font-size: 32px; }
   .account-name { font-size: 28px; }
 }
+
+
+.account-avatar {
+  overflow: hidden;              /* ensures image stays inside the circle */
+  display: flex;                 /* centers fallback / image nicely */
+  align-items: center;
+  justify-content: center;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;             /* fills the circle without stretching */
+  display: block;
+}

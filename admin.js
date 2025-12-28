@@ -164,5 +164,31 @@ router.post("/users/:id/reset-password", requireAdmin, async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
+// DELETE /api/admin/users/:id  (delete user account)
+router.delete("/users/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    // Stop deleting yourself (optional but recommended)
+    if (String(id) === String(req.userId)) {
+      return res.status(400).json({ message: "You cannot delete your own admin account." });
+    }
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Prevent deleting admin accounts (recommended so you don't lock yourself out)
+    if (user.isAdmin) {
+      return res.status(403).json({ message: "Cannot delete admin accounts" });
+    }
+
+    await User.findByIdAndDelete(id);
+    return res.json({ message: "User deleted" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 module.exports = router;

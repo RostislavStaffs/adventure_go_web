@@ -9,6 +9,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
 
   isAdmin: { type: Boolean, default: false },
+  avatarBase64: { type: String, default: "" },
 
   // Password reset (set by admin, used by reset page)
   passwordResetTokenHash: { type: String, default: null },

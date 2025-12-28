@@ -149,11 +149,11 @@ router.get("/me", requireAuth, async (req, res) => {
 
 router.put("/me", requireAuth, async (req, res) => {
   try {
-    const { firstName, lastName, phone, email } = req.body;
+    const { firstName, lastName, phone, email, avatarBase64 } = req.body;
 
     const updated = await User.findByIdAndUpdate(
       req.userId,
-      { firstName, lastName, phone, email },
+      { firstName, lastName, phone, email, avatarBase64 },
       { new: true, runValidators: true }
     ).select("-password");
 

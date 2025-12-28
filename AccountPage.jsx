@@ -1,13 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./account.css";
 import { Link } from "react-router-dom";
 
 export default function AccountPage() {
+  const fileInputRef = useRef(null);
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
+    avatarBase64: "",
   });
 
   const [saved, setSaved] = useState({
@@ -15,6 +18,7 @@ export default function AccountPage() {
     lastName: "",
     email: "",
     phone: "",
+    avatarBase64: "",
   });
 
   const [showConfirm, setShowConfirm] = useState(false);
@@ -44,10 +48,13 @@ export default function AccountPage() {
           return;
         }
 
-        setForm(data.user);
-        setSaved(data.user);
+        // Ensure avatarBase64 exists even if old users don't have it
+        const user = { avatarBase64: "", ...data.user };
+
+        setForm(user);
+        setSaved(user);
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError("Server not reachable");
         setLoading(false);
       }
@@ -65,7 +72,8 @@ export default function AccountPage() {
     form.firstName !== saved.firstName ||
     form.lastName !== saved.lastName ||
     form.email !== saved.email ||
-    form.phone !== saved.phone;
+    form.phone !== saved.phone ||
+    (form.avatarBase64 || "") !== (saved.avatarBase64 || "");
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -98,6 +106,7 @@ export default function AccountPage() {
           lastName: form.lastName,
           email: form.email,
           phone: form.phone,
+          avatarBase64: form.avatarBase64,
         }),
       });
 
@@ -109,10 +118,11 @@ export default function AccountPage() {
         return;
       }
 
-      setSaved(data.user);
-      setForm(data.user);
+      const user = { avatarBase64: "", ...data.user };
+      setSaved(user);
+      setForm(user);
       setShowConfirm(false);
-    } catch (err) {
+    } catch {
       setError("Server not reachable");
       setShowConfirm(false);
     }
@@ -126,6 +136,34 @@ export default function AccountPage() {
   function logout() {
     localStorage.removeItem("token");
     window.location.href = "/login";
+  }
+
+  function onPickImageClick() {
+    setError("");
+    fileInputRef.current?.click();
+  }
+
+  function onFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError("");
+
+    // simple size limit (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image too large. Please choose an image under 2MB.");
+      e.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateField("avatarBase64", String(reader.result || ""));
+    };
+    reader.readAsDataURL(file);
+
+    // allow re-uploading the same file later
+    e.target.value = "";
   }
 
   if (loading) {
@@ -162,21 +200,33 @@ export default function AccountPage() {
 
             {error && <p className="account-error">{error}</p>}
 
-
+            {/* Profile card */}
             <div className="account-profileCard">
-              <div className="account-avatar" aria-hidden="true" />
+              <div className="account-avatar" aria-hidden="true">
+                {form.avatarBase64 ? (
+                  <img src={form.avatarBase64} alt="Profile" />
+                ) : null}
+              </div>
 
               <div className="account-profileText">
                 <div className="account-name">{fullName}</div>
                 <div className="account-role">User</div>
               </div>
 
-              <button className="account-uploadBtn" type="button">
+              <button className="account-uploadBtn" type="button" onClick={onPickImageClick}>
                 Upload
               </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={onFileChange}
+              />
             </div>
 
-
+            {/* Input grid */}
             <div className="account-grid">
               <div className="account-field">
                 <label>First name</label>
@@ -215,7 +265,7 @@ export default function AccountPage() {
               </div>
             </div>
 
-
+            {/* Actions */}
             <div className="account-actions">
               <button
                 className={`account-confirmBtn ${isDirty ? "active" : ""}`}
@@ -233,7 +283,7 @@ export default function AccountPage() {
           </section>
         </main>
 
-
+        {/* Confirm modal */}
         {showConfirm && (
           <div className="account-modalOverlay" role="dialog" aria-modal="true">
             <div className="account-modal">

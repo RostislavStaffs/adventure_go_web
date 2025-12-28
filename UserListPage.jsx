@@ -125,9 +125,30 @@ export default function UserListPage() {
     }
   }
 
-  function handleDelete(user) {
-    alert("Delete user action can be added next (you already have the button wired).");
+  async function handleDelete(user) {
+  if (!window.confirm(`Delete ${user.email}? This cannot be undone.`)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/users/${user._id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "Delete failed");
+      return;
+    }
+
+    // If last item on page deleted, go back a page
+    const nextPageNum = users.length === 1 && page > 1 ? page - 1 : page;
+    fetchUsers(nextPageNum, search);
+  } catch {
+    alert("Server not reachable");
   }
+}
+
 
   return (
     <div className="adminPanel-page">
