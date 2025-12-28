@@ -8,6 +8,7 @@ import MainPage from "./MainPage";
 import AccountPage from "./AccountPage";
 import AdminLoginPage from "./AdminLoginPage";
 import AdminDashboard from "./AdminDashboard";
+import UserListPage from "./UserListPage";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
       <Route path="/account" element={<AccountPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/users" element={<UserListPage />} />
     </Routes>
   );
 }

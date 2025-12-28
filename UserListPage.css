@@ -1,0 +1,67 @@
+.adminPanel-backRow {
+  margin-bottom: 10px;
+}
+
+.adminPanel-backBtn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.adminPanel-tdPhone {
+  font-weight: 700;
+}
+
+.adminPanel-tdActions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+}
+
+.adminPanel-actionBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.adminPanel-actionBtn:hover {
+  opacity: 0.9;
+}
+
+.adminPanel-pagination {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.adminPanel-pageBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+}
+
+.adminPanel-pageBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.adminPanel-pageDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #aaa;
+}

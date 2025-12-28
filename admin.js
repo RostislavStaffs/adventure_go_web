@@ -6,6 +6,9 @@ const Query = require("../models/Query");
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 
+/**
+ * Admin auth middleware
+ */
 async function requireAdmin(req, res, next) {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
@@ -26,6 +29,12 @@ async function requireAdmin(req, res, next) {
     return res.status(401).json({ message: "Invalid token" });
   }
 }
+
+/**
+ * ============================
+ * USER QUERIES
+ * ============================
+ */
 
 // GET /api/admin/queries?page=1&limit=6
 router.get("/queries", requireAdmin, async (req, res) => {
@@ -76,6 +85,43 @@ router.delete("/queries/:id", requireAdmin, async (req, res) => {
     const deleted = await Query.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Query not found" });
     return res.json({ message: "Deleted" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * ============================
+ * USERS (ADMIN USER LIST)
+ * ============================
+ */
+
+// GET /api/admin/users?page=1&limit=6
+router.get("/users", requireAdmin, async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "6", 10), 1), 50);
+    const skip = (page - 1) * limit;
+
+    const [total, items] = await Promise.all([
+      User.countDocuments(),
+      User.find({})
+        .select("-password")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    const pages = Math.max(Math.ceil(total / limit), 1);
+
+    return res.json({
+      items,
+      page,
+      pages,
+      total,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
