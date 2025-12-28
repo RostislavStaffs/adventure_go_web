@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const User = require("../models/User");
 const router = express.Router();
 
@@ -99,7 +100,6 @@ router.post("/admin/login", async (req, res) => {
         .json({ message: "Email, password and adminId are required" });
     }
 
-    // Admin id gate: matches ADMIN_PASSWORD from .env
     const expectedAdminId = process.env.ADMIN_PASSWORD || "admin123";
     if (adminId !== expectedAdminId) {
       return res.status(401).json({ message: "Invalid Admin ID" });
@@ -165,6 +165,55 @@ router.put("/me", requireAuth, async (req, res) => {
       return res.status(409).json({ message: "Email already in use" });
     }
 
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * RESET PASSWORD (used by ResetPasswordPage)
+ * POST /api/auth/reset-password
+ * Body: { email, token, newPassword }
+ */
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+
+    if (!email || !token || !newPassword) {
+      return res.status(400).json({ message: "Email, token and newPassword are required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user.passwordResetTokenHash || !user.passwordResetExpiresAt) {
+      return res.status(403).json({ message: "Reset not approved for this account" });
+    }
+
+    if (new Date(user.passwordResetExpiresAt).getTime() < Date.now()) {
+      return res.status(403).json({ message: "Reset link expired" });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    if (tokenHash !== user.passwordResetTokenHash) {
+      return res.status(401).json({ message: "Invalid reset link" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    user.password = hashed;
+
+    // clear token so the link cannot be reused
+    user.passwordResetTokenHash = null;
+    user.passwordResetExpiresAt = null;
+
+    await user.save();
+
+    return res.json({ message: "Password updated" });
+  } catch (err) {
+    console.error(err);
     return res.status(500).json({ message: "Server error" });
   }
 });

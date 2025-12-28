@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./account.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-export default function AccountPage() {
+export default function AdminAccountPage() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -21,12 +23,12 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Load user on page load
+  // Load admin on page load
   useEffect(() => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      window.location.href = "/login";
+      navigate("/admin/login");
       return;
     }
 
@@ -44,21 +46,27 @@ export default function AccountPage() {
           return;
         }
 
+        // Safety check: admin only
+        if (!data.user.isAdmin) {
+          navigate("/login");
+          return;
+        }
+
         setForm(data.user);
         setSaved(data.user);
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError("Server not reachable");
         setLoading(false);
       }
     })();
-  }, []);
+  }, [navigate]);
 
   const fullName = useMemo(() => {
     const fn = (form.firstName || "").trim();
     const ln = (form.lastName || "").trim();
     const name = `${fn} ${ln}`.trim();
-    return name || "User";
+    return name || "Admin";
   }, [form.firstName, form.lastName]);
 
   const isDirty =
@@ -80,7 +88,7 @@ export default function AccountPage() {
   async function confirmYes() {
     const token = localStorage.getItem("token");
     if (!token) {
-      window.location.href = "/login";
+      navigate("/admin/login");
       return;
     }
 
@@ -112,7 +120,7 @@ export default function AccountPage() {
       setSaved(data.user);
       setForm(data.user);
       setShowConfirm(false);
-    } catch (err) {
+    } catch {
       setError("Server not reachable");
       setShowConfirm(false);
     }
@@ -125,7 +133,7 @@ export default function AccountPage() {
 
   function logout() {
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    navigate("/admin/login");
   }
 
   if (loading) {
@@ -148,7 +156,8 @@ export default function AccountPage() {
               Adventure <span>GO</span>
             </div>
 
-            <Link to="/main" className="account-back">
+            {/* 🔹 Back to Admin Dashboard */}
+            <Link to="/admin/dashboard" className="account-back">
               <span className="account-back-icon">←</span>
               Back
             </Link>
@@ -162,13 +171,14 @@ export default function AccountPage() {
 
             {error && <p className="account-error">{error}</p>}
 
-
+            {/* Profile card */}
             <div className="account-profileCard">
               <div className="account-avatar" aria-hidden="true" />
 
               <div className="account-profileText">
                 <div className="account-name">{fullName}</div>
-                <div className="account-role">User</div>
+                {/* 🔹 Role changed */}
+                <div className="account-role">Admin</div>
               </div>
 
               <button className="account-uploadBtn" type="button">
@@ -176,7 +186,7 @@ export default function AccountPage() {
               </button>
             </div>
 
-
+            {/* Input grid */}
             <div className="account-grid">
               <div className="account-field">
                 <label>First name</label>
@@ -215,7 +225,7 @@ export default function AccountPage() {
               </div>
             </div>
 
-
+            {/* Actions */}
             <div className="account-actions">
               <button
                 className={`account-confirmBtn ${isDirty ? "active" : ""}`}
@@ -226,14 +236,18 @@ export default function AccountPage() {
                 Confirm changes
               </button>
 
-              <button className="account-logoutBtn" type="button" onClick={logout}>
+              <button
+                className="account-logoutBtn"
+                type="button"
+                onClick={logout}
+              >
                 Log out
               </button>
             </div>
           </section>
         </main>
 
-
+        {/* Confirm modal */}
         {showConfirm && (
           <div className="account-modalOverlay" role="dialog" aria-modal="true">
             <div className="account-modal">

@@ -1,12 +1,51 @@
-.adminPanel-backRow {
+.adminPanel-headRow {
+  display: grid;
+  grid-template-columns: 44px 1fr 240px;
+  align-items: center;
+  gap: 14px;
   margin-bottom: 10px;
 }
 
 .adminPanel-backBtn {
-  background: transparent;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   border: none;
+  background: transparent;
   font-size: 22px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adminPanel-backBtn:hover {
+  opacity: 0.85;
+}
+
+.adminPanel-cardTitleCenter {
+  text-align: center;
+  margin: 0;
+}
+
+.adminPanel-search {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.adminPanel-search input {
+  width: 220px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0, 0, 0, 0.35);
+  padding: 0 14px;
+  outline: none;
+  font-size: 14px;
+  background: #fff;
+}
+
+.adminPanel-search input::placeholder {
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .adminPanel-tdPhone {
@@ -64,4 +103,25 @@
   height: 10px;
   border-radius: 50%;
   background: #aaa;
+}
+
+@media (max-width: 900px) {
+  .adminPanel-headRow {
+    grid-template-columns: 44px 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .adminPanel-cardTitleCenter {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .adminPanel-search {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .adminPanel-search input {
+    width: min(320px, 100%);
+  }
 }

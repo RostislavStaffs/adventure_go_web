@@ -8,8 +8,11 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 
-
   isAdmin: { type: Boolean, default: false },
+
+  // Password reset (set by admin, used by reset page)
+  passwordResetTokenHash: { type: String, default: null },
+  passwordResetExpiresAt: { type: Date, default: null },
 
   createdAt: { type: Date, default: Date.now },
 });

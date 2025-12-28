@@ -1,14 +1,12 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const User = require("../models/User");
 const Query = require("../models/Query");
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 
-/**
- * Admin auth middleware
- */
 async function requireAdmin(req, res, next) {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
@@ -36,7 +34,6 @@ async function requireAdmin(req, res, next) {
  * ============================
  */
 
-// GET /api/admin/queries?page=1&limit=6
 router.get("/queries", requireAdmin, async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
@@ -55,19 +52,13 @@ router.get("/queries", requireAdmin, async (req, res) => {
 
     const pages = Math.max(Math.ceil(total / limit), 1);
 
-    return res.json({
-      items,
-      page,
-      pages,
-      total,
-    });
+    return res.json({ items, page, pages, total });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
   }
 });
 
-// GET /api/admin/queries/:id
 router.get("/queries/:id", requireAdmin, async (req, res) => {
   try {
     const q = await Query.findById(req.params.id).lean();
@@ -79,7 +70,6 @@ router.get("/queries/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/queries/:id
 router.delete("/queries/:id", requireAdmin, async (req, res) => {
   try {
     const deleted = await Query.findByIdAndDelete(req.params.id);
@@ -95,18 +85,32 @@ router.delete("/queries/:id", requireAdmin, async (req, res) => {
  * ============================
  * USERS (ADMIN USER LIST)
  * ============================
+ * Supports search by email/first/last/phone:
+ * GET /api/admin/users?page=1&limit=6&search=rostislav
  */
 
-// GET /api/admin/users?page=1&limit=6
 router.get("/users", requireAdmin, async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || "6", 10), 1), 50);
     const skip = (page - 1) * limit;
 
+    const rawSearch = (req.query.search || "").trim();
+    const filter = {};
+
+    if (rawSearch) {
+      const rx = new RegExp(rawSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      filter.$or = [
+        { email: rx },
+        { firstName: rx },
+        { lastName: rx },
+        { phone: rx },
+      ];
+    }
+
     const [total, items] = await Promise.all([
-      User.countDocuments(),
-      User.find({})
+      User.countDocuments(filter),
+      User.find(filter)
         .select("-password")
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -116,12 +120,45 @@ router.get("/users", requireAdmin, async (req, res) => {
 
     const pages = Math.max(Math.ceil(total / limit), 1);
 
-    return res.json({
-      items,
-      page,
-      pages,
-      total,
-    });
+    return res.json({ items, page, pages, total });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * Reset password approval + link generation
+ * POST /api/admin/users/:id/reset-password
+ * Returns: { resetLink, expiresAt }
+ */
+router.post("/users/:id/reset-password", requireAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // prevent accidentally resetting admin through this UI
+    if (user.isAdmin) {
+      return res.status(400).json({ message: "Cannot reset admin password from this action" });
+    }
+
+    // create one-time token (send token to user via link; store only hash)
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const expiresMs = 60 * 60 * 1000; // 1 hour
+    const expiresAt = new Date(Date.now() + expiresMs);
+
+    user.passwordResetTokenHash = tokenHash;
+    user.passwordResetExpiresAt = expiresAt;
+    await user.save();
+
+    const frontBase = process.env.FRONTEND_URL || "http://localhost:3000";
+    const resetLink = `${frontBase}/reset-password?token=${token}&email=${encodeURIComponent(
+      user.email
+    )}`;
+
+    return res.json({ resetLink, expiresAt });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });

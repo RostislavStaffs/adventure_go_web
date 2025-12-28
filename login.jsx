@@ -153,9 +153,10 @@ const handleLogin = async (e) => {
                     <span>Remember me</span>
                   </label>
 
-                  <Link to="/forgot-password" className="login-forgot">
+                  <Link to="/contact" className="login-forgot">
                     Forgotten password?
                   </Link>
+
                 </div>
 
                 <button className="login-submit" type="submit">

@@ -159,7 +159,7 @@
   gap: 14px;
 }
 
-/* Confirm changes = grey by default, black when active (Figma-like) */
+
 .account-confirmBtn{
   width: 260px;
   border: none;
