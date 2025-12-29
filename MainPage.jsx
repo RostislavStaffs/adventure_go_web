@@ -114,6 +114,7 @@ export default function MainPage() {
 
   // trips
   const [trips, setTrips] = useState([]);
+  const [tripSearch, setTripSearch] = useState("");
 
   // modals
   const [showTripForm, setShowTripForm] = useState(false); // Add/Edit modal
@@ -678,17 +679,15 @@ export default function MainPage() {
   };
 
   
-const onEditExistingSpot = (spot) => {
-  const stableId = spot?.id || spot?._id || `spot_${crypto.randomUUID()}`;
-
-  setSpotDraft({ ...spot, id: stableId });
+const onEditExistingSpot = (spot, idx) => {
+  setSpotDraft({ ...spot });
   setSpotNote(spot?.note || "");
   setSpotPhotoFile(null);
   setSpotPhotoPreview(spot?.photo || "");
-  setEditingSpotId(stableId);
-  
+  setEditingSpotId(idx); 
   setShowSpotDetail(true);
 };
+
 
 
   const closeSpotDetail = () => {
@@ -701,31 +700,33 @@ const onEditExistingSpot = (spot) => {
   };
 
   const saveSpotDetail = () => {
-    if (!spotDraft) return;
+  if (!spotDraft) return;
 
-    const finalSpot = {
-      ...spotDraft,
-      id: editingSpotId || `spot_${crypto.randomUUID()}`,
-      note: (spotNote || "").trim(),
-      photo: spotPhotoPreview || spotDraft.photo || "",
-    };
-
-    setStepSpots((prev) => {
-      if (editingSpotId) {
-        return prev.map((s) => (s.id === editingSpotId ? finalSpot : s));
-      }
-
-      const prevHasSame =
-        prev.some(
-          (p) => p?.photon?.osm_id && finalSpot?.photon?.osm_id && p.photon.osm_id === finalSpot.photon.osm_id
-        ) || prev.some((p) => (p?.name || "").toLowerCase() === (finalSpot?.name || "").toLowerCase());
-
-      if (prevHasSame) return prev;
-      return [...prev, finalSpot];
-    });
-
-    closeSpotDetail();
+  const finalSpot = {
+    ...spotDraft,
+    note: (spotNote || "").trim(),
+    photo: spotPhotoPreview || spotDraft.photo || "",
   };
+
+  setStepSpots((prev) => {
+    // ✅ edit existing by index
+    if (editingSpotId !== null && editingSpotId !== undefined) {
+      return prev.map((s, i) => (i === editingSpotId ? finalSpot : s));
+    }
+
+    // ✅ add new (same as your current logic)
+    const prevHasSame =
+      prev.some(
+        (p) => p?.photon?.osm_id && finalSpot?.photon?.osm_id && p.photon.osm_id === finalSpot.photon.osm_id
+      ) || prev.some((p) => (p?.name || "").toLowerCase() === (finalSpot?.name || "").toLowerCase());
+
+    if (prevHasSame) return prev;
+    return [...prev, finalSpot];
+  });
+
+  closeSpotDetail();
+};
+
 
  
 // Ctrl+F: "const removeSpot ="
@@ -736,16 +737,16 @@ const removeSpot = async () => {
   if (!activeTrip?.id) return setStepError("No active trip selected.");
   if (!stepDate) return setStepError("Missing step date.");
 
-  // use editingSpotId OR spotDraft.id
-  const spotId = editingSpotId || spotDraft?.id || spotDraft?._id;
-  if (!spotId) return setStepError("Missing spot id.");
+  if (editingSpotId === null || editingSpotId === undefined) {
+    return setStepError("Missing spot index.");
+  }
 
-  const nextSpots = (stepSpots || []).filter((s) => (s.id || s._id) !== spotId);
+  const nextSpots = (stepSpots || []).filter((_, i) => i !== editingSpotId);
 
   setStepSpots(nextSpots);
   closeSpotDetail();
 
-  // persist by re-saving the step (your current logic is fine below)
+  // persist by re-saving the step (your approach is fine)
   try {
     const res = await fetch(`${API_BASE}/api/trips/${activeTrip.id}/steps`, {
       method: "POST",
@@ -778,6 +779,12 @@ const removeSpot = async () => {
 
 
 
+
+const filteredTrips = useMemo(() => {
+  const q = tripSearch.trim().toLowerCase();
+  if (!q) return trips;
+  return trips.filter((t) => (t.title || "").toLowerCase().includes(q));
+}, [trips, tripSearch]);
 
   const makeHighlightQuote = (spotName) => `“${spotName} was one of the best moments of the day.”`;
 
@@ -819,10 +826,22 @@ const removeSpot = async () => {
       {/* CONTENT */}
       <main className="main-shell">
         <section className="main-board">
-          <h1 className="main-title">Your Adventures</h1>
+          <div className="main-headerRow">
+  <h1 className="main-title">Your Adventures</h1>
+
+  <div className="main-search">
+    <input
+      value={tripSearch}
+      onChange={(e) => setTripSearch(e.target.value)}
+      placeholder="Search"
+      aria-label="Search trips by name"
+    />
+  </div>
+</div>
+
 
           <div className="main-grid">
-            {trips.map((t) => (
+            {filteredTrips.map((t) => (
               <article key={t.id} className="trip-card">
                 <div className="trip-imageWrap">
                   <img src={t.image} alt="" />
@@ -864,16 +883,7 @@ const removeSpot = async () => {
             </button>
           </div>
 
-          <div className="main-pagination">
-            <button className="page-btn" type="button" aria-label="Previous">
-              ‹
-            </button>
-            <span className="page-dot active" />
-            <span className="page-dot" />
-            <button className="page-btn" type="button" aria-label="Next">
-              ›
-            </button>
-          </div>
+          
         </section>
       </main>
 
@@ -898,7 +908,7 @@ const removeSpot = async () => {
             <h4>Support</h4>
             <Link to="/contact">Contact us</Link>
           </div>
-
+            
           <div className="footer-subscribe">
             <h4>Get updates</h4>
             <div className="subscribe">
@@ -1305,13 +1315,14 @@ const removeSpot = async () => {
                       <div className="step-h step-hSmall">Spots you have visited</div>
 
                       <div className="step-spots">
-                        {stepSpots.map((s) => (
-                          <button
-                            key={s.id || s.name}
-                            type="button"
-                            className="step-spotPill"
-                            onClick={() => onEditExistingSpot(s)}
-                          >
+                        {stepSpots.map((s, idx) => (
+                      <button
+                        key={`${s.name}_${idx}`}
+                        type="button"
+                        className="step-spotPill"
+                        onClick={() => onEditExistingSpot(s, idx)}
+                      >
+
                             <span className="step-spotThumb" aria-hidden="true" />
                             <span className="step-spotName">{s.name}</span>
                           </button>
