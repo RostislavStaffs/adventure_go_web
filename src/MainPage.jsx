@@ -176,7 +176,7 @@ export default function MainPage() {
   const [showSpotDetail, setShowSpotDetail] = useState(false);
   const [spotDraft, setSpotDraft] = useState(null); // currently picked/edited spot object
   const [spotNote, setSpotNote] = useState("");
-  const [spotPhotoFile, setSpotPhotoFile] = useState(null);
+  const [, setSpotPhotoFile] = useState(null);
   const [spotPhotoPreview, setSpotPhotoPreview] = useState("");
   const [editingSpotId, setEditingSpotId] = useState(null); // null for new, else existing spot.id
 

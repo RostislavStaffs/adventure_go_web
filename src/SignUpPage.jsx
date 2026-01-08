@@ -10,9 +10,9 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [error, setError] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [firstName] = useState("");
+  const [lastName] = useState("");
+  const [phone] = useState("");
 
     const handleSignup = async (e) => {
     e.preventDefault();

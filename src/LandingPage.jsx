@@ -3,7 +3,6 @@ import "./landing.css";
 import travelIcon from "./images/travels.png";
 import phoneIcon from "./images/phone.png";
 import businessIcon from "./images/business.png";
-import heroImage from "./images/hiking.jpg";
 import watermark from "./images/watermark.svg"; 
 import { Link } from "react-router-dom";
 
@@ -17,7 +16,7 @@ export default function LandingPage() {
             Adventure <span>GO</span>
           </div>
           <nav className="nav-links">
-            <a href="#">Home</a>
+            <Link to="/">Home</Link>
             <Link to="/about">About us</Link>
             <Link to="/contact">Contact</Link>
           </nav>
