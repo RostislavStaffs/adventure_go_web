@@ -1,0 +1,219 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.contact-page {
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #121212;
+}
+
+.contact-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 32px;
+}
+
+
+.contact-topbar {
+  margin-bottom: 28px;
+}
+
+.contact-topbar-inner {
+  width: 100%;
+  border: 1.5px solid rgba(0,0,0,0.15);
+  border-radius: 999px;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.contact-brand {
+  font-weight: 800;
+  font-size: 22px;
+}
+
+.contact-brand span {
+  color: #d2a679;
+  font-weight: 900;
+}
+
+.contact-back {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 20px;
+  color: #121212;
+  text-decoration: none;
+}
+
+.contact-back-icon {
+  font-size: 22px;
+}
+
+.contact-grid {
+  display: grid;
+  align-items: stretch;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 26px;
+  grid-auto-rows: minmax(420px, 620px);
+}
+
+.contact-imageCard {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #ffffff;
+  z-index: 3;
+}
+
+.contact-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contact-imageCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.00) 45%,
+    rgba(0,0,0,0.55) 85%,
+    rgba(0,0,0,0.70) 100%
+  );
+}
+
+.contact-imageOverlay {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 22px;
+  color: #fff;
+  z-index: 3;
+}
+
+.contact-imageOverlay h3 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #ffffff;
+    opacity: 1 !important;
+}
+
+.contact-imageOverlay p {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.9;
+  max-width: 430px;
+  color: #ffffff;
+  opacity: 1 !important;
+}
+
+.contact-formCard {
+  border-radius: 18px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  background: #f2f2f2;
+  padding: 34px 34px 30px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.contact-formCard h1 {
+  font-size: 34px;
+  font-weight: 900;
+  margin-bottom: 26px;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.contact-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(0,0,0,0.75);
+  margin-top: 6px;
+}
+
+.contact-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.contact-inputWrap {
+  position: relative;
+}
+
+.contact-inputIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(0,0,0,0.35);
+}
+
+.contact-inputWrap input {
+  width: 100%;
+  height: 44px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.35);
+  background: #f7f7f7;
+  padding: 0 16px 0 44px;
+  outline: none;
+  font-size: 14px;
+}
+
+.contact-textareaWrap {
+  position: relative;
+}
+
+.contact-textareaWrap textarea {
+  width: 100%;
+  height: 120px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(0,0,0,0.35);
+  background: #f7f7f7;
+  padding: 14px;
+  resize: none;
+}
+
+.contact-counter {
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  font-size: 11px;
+  color: rgba(0,0,0,0.45);
+}
+
+.contact-submit {
+  margin-top: 18px;
+  height: 52px;
+  border-radius: 999px;
+  border: none;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.contact-submit:hover {
+  filter: brightness(1.05);
+}
+
+@media (max-width: 980px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-formCard {
+    padding: 28px 22px;
+  }
+}

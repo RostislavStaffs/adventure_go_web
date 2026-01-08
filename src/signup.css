@@ -1,0 +1,257 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.signup-page {
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #121212;
+}
+
+
+.signup-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 32px;
+}
+
+
+
+.signup-topbar {
+  margin-bottom: 28px;
+}
+
+.signup-topbar-inner {
+  width: 100%;
+  border: 1.5px solid rgba(0,0,0,0.15);
+  border-radius: 999px;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.signup-brand {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.2px;
+}
+
+.signup-brand span {
+  color: #d2a679;
+  font-weight: 900;
+}
+
+.signup-back {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #121212;
+  text-decoration: none;
+}
+
+.signup-back-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+
+.signup-main {
+  width: 100%;
+}
+
+.signup-grid {
+  display: grid;
+  align-items: stretch; 
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 26px;
+  grid-auto-rows: minmax(420px, 620px);
+}
+
+
+
+.signup-imageCard {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #111;
+  min-height: 420px;
+  height: 100%;
+  max-height: 620px;
+}
+
+
+.signup-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+
+.signup-imageCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.00) 45%,
+    rgba(0,0,0,0.55) 85%,
+    rgba(0,0,0,0.70) 100%
+  );
+}
+
+.signup-imageOverlay {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 22px;
+  z-index: 2;
+  color: #fff;
+}
+
+.signup-imageOverlay h3 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.signup-imageOverlay p {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.9;
+  max-width: 430px;
+}
+
+
+.signup-formCard {
+  border-radius: 18px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  background: #f2f2f2;
+  padding: 34px 34px 30px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  height: 100%; 
+}
+
+
+
+.signup-formCard h1 {
+  font-size: 34px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.signup-subtitle {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(0,0,0,0.55);
+  margin-bottom: 26px;
+  max-width: 360px;
+}
+.signup-error {
+  margin-top: -14px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #c62828;
+}
+
+
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.signup-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(0,0,0,0.75);
+  margin-top: 6px;
+}
+
+.signup-inputWrap {
+  position: relative;
+  width: 100%;
+}
+
+.signup-inputIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(0,0,0,0.35);
+  display: inline-flex;
+}
+
+.signup-inputWrap input {
+  width: 100%;
+  height: 44px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.35);
+  background: #f7f7f7;
+  padding: 0 16px 0 44px;
+  outline: none;
+  font-size: 14px;
+  color: #111;
+}
+
+.signup-inputWrap input::placeholder {
+  color: rgba(0,0,0,0.35);
+}
+
+.signup-loginRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(0,0,0,0.45);
+}
+
+.signup-loginRow a {
+  color: rgba(0,0,0,0.85);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* button */
+.signup-submit {
+  margin-top: 18px;
+  height: 52px;
+  border-radius: 999px;
+  border: none;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.signup-submit:hover {
+  filter: brightness(1.05);
+}
+
+@media (max-width: 980px) {
+  .signup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .signup-imageCard {
+  min-height: 420px;
+  max-height: 60vh;
+}
+
+
+  .signup-formCard {
+    padding: 28px 22px;
+  }
+}

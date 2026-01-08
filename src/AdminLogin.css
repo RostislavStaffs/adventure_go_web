@@ -1,0 +1,234 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.adminLogin-page {
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #121212;
+}
+
+.adminLogin-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 32px;
+}
+
+.adminLogin-topbar {
+  margin-bottom: 28px;
+}
+
+.adminLogin-topbar-inner {
+  width: 100%;
+  border: 1.5px solid rgba(0,0,0,0.15);
+  border-radius: 999px;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.adminLogin-brand {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.2px;
+}
+
+.adminLogin-brand span {
+  color: #d2a679;
+  font-weight: 900;
+}
+
+.adminLogin-back {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #121212;
+  text-decoration: none;
+}
+
+.adminLogin-back-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.adminLogin-main {
+  width: 100%;
+}
+
+.adminLogin-grid {
+  display: grid;
+  align-items: stretch;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 26px;
+
+  /* ✅ this is the key fix: match login sizing */
+  grid-auto-rows: minmax(420px, 620px);
+}
+
+.adminLogin-imageCard {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #111;
+  min-height: 420px;
+  height: 100%;
+  max-height: 620px;
+}
+
+.adminLogin-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.adminLogin-imageCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.00) 45%,
+    rgba(0,0,0,0.55) 85%,
+    rgba(0,0,0,0.70) 100%
+  );
+}
+
+.adminLogin-imageOverlay {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 22px;
+  z-index: 2;
+  color: #fff;
+}
+
+.adminLogin-imageOverlay h3 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.adminLogin-imageOverlay p {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.9;
+  max-width: 430px;
+}
+
+.adminLogin-formCard {
+  border-radius: 18px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  background: #f2f2f2;
+  padding: 34px 34px 30px;
+
+  /* ✅ keeps it vertically centered like login */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  height: 100%;
+}
+
+.adminLogin-formCard h1 {
+  font-size: 34px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.adminLogin-subtitle {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(0,0,0,0.55);
+  margin-bottom: 26px;
+  max-width: 360px;
+}
+
+.adminLogin-wave {
+  margin-left: 6px;
+}
+
+.adminLogin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.adminLogin-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(0,0,0,0.75);
+  margin-top: 6px;
+}
+
+.adminLogin-inputWrap {
+  position: relative;
+  width: 100%;
+}
+
+.adminLogin-inputIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(0,0,0,0.35);
+  display: inline-flex;
+}
+
+.adminLogin-inputWrap input {
+  width: 100%;
+  height: 44px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.35);
+  background: #f7f7f7;
+  padding: 0 16px 0 44px;
+  outline: none;
+  font-size: 14px;
+  color: #111;
+}
+
+.adminLogin-inputWrap input::placeholder {
+  color: rgba(0,0,0,0.35);
+}
+
+.adminLogin-submit {
+  margin-top: 18px;
+  height: 52px;
+  border-radius: 999px;
+  border: none;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.adminLogin-error {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: crimson;
+}
+
+.adminLogin-submit:hover {
+  filter: brightness(1.05);
+}
+
+@media (max-width: 980px) {
+  .adminLogin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .adminLogin-imageCard {
+    min-height: 420px;
+    max-height: 60vh;
+  }
+
+  .adminLogin-formCard {
+    padding: 28px 22px;
+  }
+}

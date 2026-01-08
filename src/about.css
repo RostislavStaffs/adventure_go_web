@@ -1,0 +1,310 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.about-page {
+  width: 100%;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+.navbar {
+  width: 100%;
+  position: relative;
+  z-index: 9999;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.logo span {
+  color: #d2a679;
+}
+
+.nav-links {
+  display: flex;
+  gap: 40px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #333;
+  font-size: 14px;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.login {
+  text-decoration: none;
+  color: #333;
+  font-size: 14px;
+}
+
+.signup {
+  background: #d2a679;
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.about-hero {
+  max-width: 1200px;
+  margin: 28px auto 0;
+  padding: 0 32px;
+}
+
+.about-hero-img {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 22px;
+  display: block;
+}
+
+.about-hero {
+  position: relative;
+}
+
+.about-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: 0 32px;
+  border-radius: 22px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    rgba(0,0,0,0.55) 0%,
+    rgba(0,0,0,0.20) 55%,
+    rgba(0,0,0,0.00) 100%
+  );
+}
+
+.about-hero-overlay {
+  position: absolute;
+  left: 64px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  z-index: 2;
+}
+
+.about-hero-overlay h1 {
+  font-size: 64px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  margin-bottom: 14px;
+}
+
+.about-hero-overlay p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.85);
+  max-width: 380px;
+}
+
+.about-content {
+  max-width: 1200px;
+  margin: 36px auto 120px;
+  padding: 0 32px;
+}
+
+.about-content h2 {
+  font-size: 32px;
+  font-weight: 900;
+  margin-bottom: 14px;
+}
+
+.about-body {
+  max-width: 980px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: rgba(0,0,0,0.78);
+}
+
+.about-body p + p {
+  margin-top: 18px;
+}
+
+.about-body strong {
+  color: rgba(0,0,0,0.95);
+  font-weight: 800;
+}
+
+.footer {
+  position: relative;
+  margin: 0 auto;
+  max-width: 1400px;
+  background: #0f0f0f;
+  color: #fff;
+
+  border-top-left-radius: 70px;
+  border-top-right-radius: 70px;
+
+  padding: 70px 80px 60px;
+  overflow: hidden;
+}
+
+.footer-watermark {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  width: min(1300px, 95%);
+  opacity: 1;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+.footer-inner {
+  position: relative;
+  z-index: 2;
+
+  display: grid;
+  grid-template-columns: 2.2fr 0.8fr 0.9fr 1.6fr;
+  gap: 60px;
+  align-items: start;
+
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-brand h3 {
+  font-size: 34px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.footer-brand p {
+  font-size: 18px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 520px;
+}
+
+.footer-copy {
+  margin-top: 26px;
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.footer-col h4,
+.footer-subscribe h4 {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.footer-col a {
+  display: inline-block;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+}
+
+.footer-col a:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.subscribe {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.subscribe input {
+  width: 260px;
+  padding: 14px 18px;
+  border-radius: 999px;
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.subscribe input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.subscribe button {
+  padding: 14px 26px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: #ffffff;
+  color: #111;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .footer {
+    padding: 60px 28px 50px;
+    border-top-left-radius: 48px;
+    border-top-right-radius: 48px;
+  }
+
+  .footer-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+
+  .subscribe {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .subscribe input {
+    width: min(340px, 100%);
+  }
+}
+
+@media (max-width: 760px) {
+  .about-hero {
+    padding: 0 16px;
+  }
+
+  .about-hero::after {
+    margin: 0 16px;
+  }
+
+  .about-hero-overlay {
+    left: 34px;
+  }
+
+  .about-hero-overlay h1 {
+    font-size: 46px;
+  }
+
+  .about-content {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .footer-inner {
+    grid-template-columns: 1fr;
+  }
+}

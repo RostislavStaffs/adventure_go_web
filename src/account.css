@@ -1,0 +1,269 @@
+* { box-sizing: border-box; }
+
+.account-page {
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #121212;
+}
+
+.account-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 32px;
+}
+
+/* topbar pill */
+.account-topbar {
+  margin-bottom: 28px;
+}
+
+.account-topbar-inner {
+  width: 100%;
+  border: 1.5px solid rgba(0,0,0,0.15);
+  border-radius: 999px;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account-brand {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.2px;
+}
+
+.account-brand span { color: #d2a679; }
+
+.account-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #111;
+  font-weight: 600;
+}
+
+.account-back-icon { font-size: 18px; }
+
+/* main card */
+.account-main {
+  display: flex;
+  justify-content: center;
+}
+
+.account-card {
+  width: min(900px, 100%);
+  border: 1.5px solid rgba(0,0,0,0.15);
+  border-radius: 22px;
+  padding: 34px 34px 28px;
+  background: #fff;
+}
+
+.account-card h1 {
+  font-size: 40px;
+  font-weight: 900;
+  margin: 8px 0 22px;
+}
+
+/* optional error */
+.account-error{
+  margin: -8px 0 14px;
+  color: crimson;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* profile card */
+.account-profileCard {
+  border-radius: 18px;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 26px;
+  background: #fff;
+}
+
+.account-avatar {
+  width: 74px;
+  height: 74px;
+  border-radius: 999px;
+  background: #ddd;
+  flex: 0 0 auto;
+}
+
+.account-profileText { flex: 1; }
+
+.account-name {
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.account-role {
+  margin-top: 6px;
+  font-size: 14px;
+  color: rgba(0,0,0,0.55);
+  font-weight: 600;
+}
+
+.account-uploadBtn {
+  border: none;
+  background: #111;
+  color: #fff;
+  padding: 12px 26px;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* input grid */
+.account-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px 34px;
+  margin-top: 10px;
+}
+
+.account-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.account-field input {
+  width: 100%;
+  height: 46px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.6);
+  padding: 0 18px;
+  outline: none;
+  font-size: 14px;
+  background: #fff;
+}
+
+.account-field input:focus {
+  border-color: #111;
+}
+
+/* actions */
+.account-actions {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+
+.account-confirmBtn{
+  width: 260px;
+  border: none;
+  background: #9a9a9a;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.account-confirmBtn:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.account-confirmBtn.active{
+  background: #111;
+  opacity: 1;
+}
+
+.account-logoutBtn {
+  width: 220px;
+  border: none;
+  background: #111;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* modal */
+.account-modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.account-modal {
+  width: min(560px, 100%);
+  background: #fff;
+  border-radius: 22px;
+  padding: 36px 26px 26px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.25);
+}
+
+.account-modal h2 {
+  font-size: 40px;
+  font-weight: 900;
+  margin-bottom: 22px;
+}
+
+.account-modalButtons {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+}
+
+.account-modalYes,
+.account-modalNo {
+  width: 190px;
+  height: 56px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.account-modalYes {
+  border: none;
+  background: #111;
+  color: #fff;
+}
+
+.account-modalNo {
+  background: #fff;
+  color: #111;
+  border: 1.5px solid rgba(0,0,0,0.65);
+}
+
+/* responsive */
+@media (max-width: 720px) {
+  .account-grid { grid-template-columns: 1fr; }
+  .account-card { padding: 26px 20px 24px; }
+  .account-card h1 { font-size: 32px; }
+  .account-name { font-size: 28px; }
+}
+
+
+.account-avatar {
+  overflow: hidden;              /* ensures image stays inside the circle */
+  display: flex;                 /* centers fallback / image nicely */
+  align-items: center;
+  justify-content: center;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;             /* fills the circle without stretching */
+  display: block;
+}
